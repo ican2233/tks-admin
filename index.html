@@ -161,15 +161,18 @@
                     usersArray = Array.isArray(rawData) ? rawData : Object.values(rawData);
                 }
 
-                // CARI FUNGSI loadFirebaseData() DAN GANTI BAGIAN usersArray.forEach DENGAN INI:
+                // GANTI BAGIAN usersArray.forEach DALAM FUNGSI loadFirebaseData() DENGAN INI:
 
 usersArray.forEach((u, index) => {
     if(!u) return;
     const name = u.username || u.ID || u.id || "Unknown";
     const exp = u.Expiry || u.expiresAt || "-";
-    
-    // Ambil nilai Key/Password jika ada (untuk Lock 1 & Lock 2)
     const passKey = u.key || u.password || "";
+    
+    // Logika menampilkan status Offline
+    // Kita cek u.allowOffline. Jika true tampilkan YES, jika false tampilkan NO.
+    const offlineStatus = u.allowOffline === true || u.allowOffline === "true" ? "YES" : "NO";
+    const offlineColor = offlineStatus === "YES" ? "text-emerald-400" : "text-red-400";
 
     list.innerHTML += `
         <div class="glass-card p-5 rounded-[2.5rem] shadow-lg mb-4">
@@ -182,19 +185,24 @@ usersArray.forEach((u, index) => {
             </div>
             <div class="bg-black/40 p-4 rounded-2xl space-y-1 text-[10px]">
                 <div class="flex justify-between"> 
-                    <span class="opacity-50 uppercase">Device ID</span> 
+                    <span class="opacity-50 uppercase tracking-tighter">Device ID</span> 
                     <span class="text-blue-300 font-bold">${u.id || u.ID}</span> 
                 </div>
                 
                 ${passKey ? `
                 <div class="flex justify-between border-t border-white/5 pt-1 mt-1"> 
-                    <span class="opacity-50 uppercase">Key / Pass</span> 
-                    <span class="text-emerald-400 font-bold">${passKey}</span> 
+                    <span class="opacity-50 uppercase tracking-tighter">Key / Pass</span> 
+                    <span class="text-indigo-400 font-bold">${passKey}</span> 
                 </div>` : ''}
 
                 <div class="flex justify-between border-t border-white/5 pt-1 mt-1"> 
-                    <span class="opacity-50 uppercase">Expires At</span> 
+                    <span class="opacity-50 uppercase tracking-tighter">Expires At</span> 
                     <span class="text-amber-400 font-bold">${exp}</span> 
+                </div>
+
+                <div class="flex justify-between border-t border-white/5 pt-1 mt-1"> 
+                    <span class="opacity-50 uppercase tracking-tighter">Allow Offline</span> 
+                    <span class="${offlineColor} font-black">${offlineStatus}</span> 
                 </div>
             </div>
         </div>`;
