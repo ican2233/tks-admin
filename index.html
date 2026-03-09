@@ -306,17 +306,21 @@
         }
 
         function deleteUser(index) {
-            if(!confirm("Hapus user ini?")) return;
-            let dataToSave;
-            if (currentPath === "autologin") {
-                rawData.Users.splice(index, 1); dataToSave = rawData;
-            } else { 
-                let arr = Array.isArray(rawData) ? [...rawData] : Object.values(rawData);
-                arr.splice(index, 1); dataToSave = arr;
-            }
-            db.ref(currentPath).set(dataToSave);
-            showToast("User Dihapus");
-        }
+    // Hapus baris 'if(!confirm(...)) return;' jika ingin tanpa tanya-tanya lagi
+    let dataToSave;
+    if (currentPath === "autologin") {
+        rawData.Users.splice(index, 1); 
+        dataToSave = rawData;
+    } else { 
+        let arr = Array.isArray(rawData) ? [...rawData] : Object.values(rawData);
+        arr.splice(index, 1); 
+        dataToSave = arr;
+    }
+    db.ref(currentPath).set(dataToSave);
+    
+    // Gunakan Toast untuk memberitahu user
+    showToast("User Berhasil Dihapus", "error"); 
+}
 
         function filterUser() {
             const q = document.getElementById('searchInput').value.toLowerCase();
