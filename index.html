@@ -185,7 +185,7 @@
             });
         }
 
-        function renderUsers() {
+                function renderUsers() {
             const list = document.getElementById('userList');
             const searchVal = document.getElementById('searchInput').value.toLowerCase();
             let usersArray = (currentPath === "autologin") ? (rawData.Users || []) : (Array.isArray(rawData) ? rawData : Object.values(rawData));
@@ -195,11 +195,19 @@
 
             usersArray.forEach((u, index) => {
                 if(!u) return;
-                const title = (u.username || u.id || u.ID || "").toLowerCase();
+                
+                // Ambil semua data yang mungkin dicari
+                const title = (u.username || "").toLowerCase();
                 const subId = (u.id || u.ID || "").toLowerCase();
+                const keyPass = (u.key || u.password || "").toLowerCase(); // Tambahan filter Key
 
-                // Logika Filter Pencarian
-                if (searchVal && !title.includes(searchVal) && !subId.includes(searchVal)) return;
+                // Logika Filter Pencarian: Cek Username, ID, atau Key
+                if (searchVal && 
+                    !title.includes(searchVal) && 
+                    !subId.includes(searchVal) && 
+                    !keyPass.includes(searchVal)) {
+                    return;
+                }
 
                 count++;
                 const isAuto = currentPath === "autologin";
@@ -215,8 +223,8 @@
                         <div class="flex justify-between items-center mb-3">
                             <div class="font-black text-white italic uppercase text-sm truncate pr-4">${displayTitle}</div>
                             <div class="flex gap-2">
-                                <button onclick="editUser(${index})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><i class="fa-solid fa-pen text-xs"></i></button>
-                                <button onclick="deleteUser(${index})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20"><i class="fa-solid fa-trash text-xs"></i></button>
+                                <button onclick="editUser(${index})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20 transition hover:bg-blue-500/30"><i class="fa-solid fa-pen text-xs"></i></button>
+                                <button onclick="deleteUser(${index})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20 transition hover:bg-red-500/30"><i class="fa-solid fa-trash text-xs"></i></button>
                             </div>
                         </div>
                         <div class="bg-black/40 p-4 rounded-2xl text-[10px] space-y-1">
@@ -229,6 +237,7 @@
             });
             document.getElementById('totalUserCounter').innerText = count;
         }
+
 
         function filterUserList() { renderUsers(); }
 
