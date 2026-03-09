@@ -32,7 +32,7 @@
             
             <div class="space-y-4">
                 <div class="space-y-1">
-                    <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Device ID / Key</label>
+                    <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Device ID</label>
                     <input type="text" id="field_id" placeholder="Contoh: a880d1..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white focus:border-blue-500 outline-none shadow-inner">
                 </div>
                 <div class="space-y-1">
@@ -40,7 +40,7 @@
                     <input type="text" id="field_username" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white focus:border-blue-500 outline-none">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Password / Key</label>
+                    <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Password / Key (PENTING)</label>
                     <input type="text" id="field_password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white focus:border-blue-500 outline-none">
                 </div>
                 <div class="space-y-1">
@@ -66,30 +66,22 @@
             <input type="text" id="searchInput" onkeyup="filterUser()" placeholder="Cari ID atau Username..." class="w-full p-5 pl-14 bg-slate-900 rounded-2xl border border-slate-800 outline-none text-sm focus:border-blue-500 shadow-xl">
         </div>
 
-        <div id="userList" class="space-y-4">
-            </div>
+        <div id="userList" class="space-y-4"></div>
     </div>
 
     <script>
-        // --- KONFIGURASI FIREBASE ---
-        // GANTI DENGAN KODE MILIK ANDA DARI SETELAN PROJECT FIREBASE
+        // --- KONFIGURASI FIREBASE (SUDAH DISESUAIKAN) ---
         const firebaseConfig = {
-            apiKey: "AIzaSy...",
-            authDomain: "panel-2a2fd.firebaseapp.com",
-            databaseURL: "https://panel-2a2fd-default-rtdb.firebaseio.com",
-            projectId: "panel-2a2fd",
-            storageBucket: "panel-2a2fd.appspot.com",
-            messagingSenderId: "...",
-            appId: "..."
+            databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com"
         };
 
-        // Inisialisasi Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        let currentPath = "lock1"; // Folder default saat dibuka
+        let currentPath = "lock2"; // Default ke lock2 agar sesuai tes terakhir
+        let fullData = []; // Simpan data sebagai Array lokal
 
-        // Load data otomatis saat halaman dibuka
         window.onload = () => {
+            document.getElementById('lockSelector').value = "lock2";
             loadFirebaseData();
         };
 
@@ -100,51 +92,65 @@
 
         function loadFirebaseData() {
             const list = document.getElementById('userList');
-            // Listen data real-time
             db.ref(currentPath).on('value', (snapshot) => {
                 const data = snapshot.val();
                 list.innerHTML = ''; 
+                fullData = [];
 
                 if (!data) {
                     list.innerHTML = '<div class="text-center opacity-30 text-xs py-10 uppercase font-bold tracking-widest">Database Kosong</div>';
                     return;
                 }
 
-                for (let id in data) {
-                    const u = data[id];
+                // Ubah object ke array untuk manajemen yang lebih mudah
+                fullData = Array.isArray(data) ? data : Object.values(data);
+
+                fullData.forEach((u, index) => {
+                    if(!u) return;
                     list.innerHTML += `
-                        <div class="bg-slate-900/60 p-5 rounded-[2.5rem] border border-white/5 shadow-lg animate-in fade-in duration-300">
+                        <div class="bg-slate-900/60 p-5 rounded-[2.5rem] border border-white/5 shadow-lg">
                             <div class="flex justify-between items-center mb-3">
                                 <div class="font-black text-white italic uppercase">${u.username || 'NO NAME'}</div>
                                 <div class="flex gap-2">
-                                    <button onclick="editUser('${id}', '${u.username}', '${u.password || u.key}', '${u.expiresAt}', ${u.allowOffline})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><i class="fa-solid fa-pen text-xs"></i></button>
-                                    <button onclick="deleteUser('${id}')" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20"><i class="fa-solid fa-trash text-xs"></i></button>
+                                    <button onclick="editUser(${index})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><i class="fa-solid fa-pen text-xs"></i></button>
+                                    <button onclick="deleteUser(${index})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20"><i class="fa-solid fa-trash text-xs"></i></button>
                                 </div>
                             </div>
                             <div class="bg-black/40 p-4 rounded-2xl space-y-1 text-[10px]">
-                                <div class="flex justify-between border-b border-white/5 pb-1"> <span class="opacity-50 uppercase">ID</span> <span class="text-blue-300 font-bold">${id}</span> </div>
+                                <div class="flex justify-between border-b border-white/5 pb-1"> <span class="opacity-50 uppercase">ID</span> <span class="text-blue-300 font-bold">${u.id}</span> </div>
+                                <div class="flex justify-between border-b border-white/5 py-1"> <span class="opacity-50 uppercase">KEY</span> <span class="text-white font-bold">${u.key || u.password}</span> </div>
                                 <div class="flex justify-between border-b border-white/5 py-1"> <span class="opacity-50 uppercase">EXP</span> <span class="text-amber-400 font-bold">${u.expiresAt}</span> </div>
                                 <div class="flex justify-between pt-1"> <span class="opacity-50 uppercase">OFFLINE</span> <span class="${u.allowOffline ? 'text-emerald-400' : 'text-red-400'} font-bold">${u.allowOffline ? 'YES' : 'NO'}</span> </div>
                             </div>
                         </div>`;
-                }
+                });
             });
         }
 
         async function saveUser() {
-            const id = document.getElementById('field_id').value;
-            if(!id) return alert("ID Device tidak boleh kosong!");
+            const deviceId = document.getElementById('field_id').value;
+            if(!deviceId) return alert("ID Device wajib diisi!");
 
-            const userData = {
-                username: document.getElementById('field_username').value,
-                password: document.getElementById('field_password').value,
+            const newUser = {
+                id: deviceId,
+                username: document.getElementById('field_username').value || "User",
+                key: document.getElementById('field_password').value, // DIUBAH KE 'key' AGAR COCOK DENGAN SMALI
                 expiresAt: document.getElementById('field_expiry').value,
                 allowOffline: document.getElementById('field_offline').value === 'true'
             };
 
+            // Cari apakah ID sudah ada, jika ada kita timpa
+            const existingIndex = fullData.findIndex(u => u && u.id === deviceId);
+            
+            if (existingIndex !== -1) {
+                fullData[existingIndex] = newUser;
+            } else {
+                fullData.push(newUser);
+            }
+
             try {
-                // Simpan ke Firebase berdasarkan Path lock1/lock2 yang dipilih
-                await db.ref(currentPath + '/' + id).set(userData);
+                // SIMPAN SELURUH ARRAY KEMBALI (Menjaga format [0, 1, 2])
+                await db.ref(currentPath).set(fullData);
                 alert("Berhasil disimpan ke " + currentPath.toUpperCase());
                 clearForm();
             } catch (e) {
@@ -152,18 +158,20 @@
             }
         }
 
-        function editUser(id, user, pass, exp, offline) {
-            document.getElementById('field_id').value = id;
-            document.getElementById('field_username').value = user;
-            document.getElementById('field_password').value = pass;
-            document.getElementById('field_expiry').value = exp;
-            document.getElementById('field_offline').value = offline.toString();
+        function editUser(index) {
+            const u = fullData[index];
+            document.getElementById('field_id').value = u.id;
+            document.getElementById('field_username').value = u.username;
+            document.getElementById('field_password').value = u.key || u.password;
+            document.getElementById('field_expiry').value = u.expiresAt;
+            document.getElementById('field_offline').value = u.allowOffline.toString();
             window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
-        function deleteUser(id) {
-            if(confirm("Hapus user " + id + "?")) {
-                db.ref(currentPath + '/' + id).remove(); // Hapus dari Firebase
+        function deleteUser(index) {
+            if(confirm("Hapus user ini?")) {
+                fullData.splice(index, 1);
+                db.ref(currentPath).set(fullData);
             }
         }
 
@@ -182,5 +190,4 @@
         }
     </script>
 </body>
-  </html>
-
+</html>
