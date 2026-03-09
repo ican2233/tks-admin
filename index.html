@@ -63,7 +63,7 @@
             <button onclick="doLogout()" class="absolute right-6 top-6 text-white/50 hover:text-white transition">
                 <i class="fa-solid fa-power-off"></i>
             </button>
-            <h1 class="text-2xl font-black tracking-tighter italic text-white uppercase">TKS TEAM Smart Admin</h1>
+            <h1 class="text-2xl font-black tracking-tighter italic text-white uppercase">TKS TEAM Admin</h1>
         </div>
 
         <div class="max-w-md mx-auto px-4">
@@ -72,7 +72,7 @@
                     <div class="w-2/3">
                         <label class="text-[9px] text-blue-400 font-black uppercase tracking-widest ml-2 mb-2 block">Mode Database</label>
                         <select id="lockSelector" onchange="switchDatabase()" class="w-full bg-slate-800 p-3 rounded-xl font-bold text-xs border border-slate-600 text-white outline-none">
-                            <option value="lock1">Lock Password (Key Only)</option>
+                            <option value="lock1">Lock Password</option>
                             <option value="lock2" selected>Lock Pass & Username</option>
                             <option value="autologin">Lock Auto Login</option>
                         </select>
@@ -83,7 +83,7 @@
                 </div>
                 <div class="relative mt-2">
                     <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                    <input type="text" id="searchInput" onkeyup="filterUserList()" placeholder="Cari ID atau Username..." class="w-full p-3 pl-10 bg-black/30 border border-slate-700 rounded-xl text-xs outline-none focus:border-blue-500 transition">
+                    <input type="text" id="searchInput" onkeyup="filterUserList()" placeholder="Cari ID atau Username" class="w-full p-3 pl-10 bg-black/30 border border-slate-700 rounded-xl text-xs outline-none focus:border-blue-500 transition">
                 </div>
             </div>
 
@@ -103,9 +103,9 @@
                     <i class="fa-solid fa-user-plus mr-2"></i> Tambah User
                 </h2>
                 <div class="space-y-4">
-                    <input type="text" id="field_id" placeholder="ID Device..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
-                    <div id="usernameContainer"><input type="text" id="field_username" placeholder="Username..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none"></div>
-                    <div id="passwordContainer"><input type="text" id="field_password" placeholder="Key / Password..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none"></div>
+                    <input type="text" id="field_id" placeholder="ID Device" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
+                    <div id="usernameContainer"><input type="text" id="field_username" placeholder="Username" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none"></div>
+                    <div id="passwordContainer"><input type="text" id="field_password" placeholder="Key / Password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none"></div>
                     <input type="date" id="field_expiry" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
                     <div id="offlineContainer" class="bg-black/40 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
                         <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Allow Offline</span>
