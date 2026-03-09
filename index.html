@@ -9,7 +9,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
-        /* Menyesuaikan tampilan kalender agar serasi dengan tema dark */
         input[type="date"]::-webkit-calendar-picker-indicator {
             filter: invert(1);
             cursor: pointer;
@@ -110,7 +109,6 @@
 
         function switchDatabase() {
             currentPath = document.getElementById('lockSelector').value;
-            
             const uContainer = document.getElementById('usernameContainer');
             const pContainer = document.getElementById('passwordContainer');
             const oContainer = document.getElementById('offlineContainer');
@@ -122,6 +120,19 @@
             cArea.classList.toggle('hidden', currentPath !== "autologin");
             
             loadFirebaseData();
+        }
+
+        // Fungsi pembantu untuk membalik format tanggal
+        function formatDateToDMY(dateStr) {
+            if(!dateStr || !dateStr.includes('-')) return dateStr;
+            const [y, m, d] = dateStr.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        function formatDateToYMD(dateStr) {
+            if(!dateStr || !dateStr.includes('/')) return dateStr;
+            const [d, m, y] = dateStr.split('/');
+            return `${y}-${m}-${d}`;
         }
 
         function loadFirebaseData() {
@@ -169,12 +180,15 @@
 
         async function saveUser() {
             const deviceId = document.getElementById('field_id').value;
-            const expiryDate = document.getElementById('field_expiry').value; // Ambil nilai kalender (YYYY-MM-DD)
+            let expiryValue = document.getElementById('field_expiry').value;
             
             if(!deviceId) return alert("ID Device wajib diisi!");
-            if(!expiryDate) return alert("Tanggal Expired wajib diisi!");
+            if(!expiryValue) return alert("Tanggal Expired wajib diisi!");
 
             if (currentPath === "autologin") {
+                // KONVERSI KE DD/MM/YYYY KHUSUS AUTOLOGIN
+                const formattedDate = formatDateToDMY(expiryValue);
+                
                 let dataToSave = (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) ? rawData : { AdminUrl: "", Marquee: "", Users: [] };
                 dataToSave.AdminUrl = document.getElementById('cfg_adminUrl').value;
                 dataToSave.Marquee = document.getElementById('cfg_marquee').value;
@@ -182,7 +196,7 @@
 
                 const newUser = {
                     ID: deviceId,
-                    Expiry: expiryDate // Menyimpan format standar YYYY-MM-DD agar mudah dibaca sistem
+                    Expiry: formattedDate 
                 };
 
                 const existingIdx = dataToSave.Users.findIndex(u => u && u.ID === deviceId);
@@ -196,7 +210,7 @@
                     id: deviceId,
                     password: document.getElementById('field_password').value,
                     key: document.getElementById('field_password').value,
-                    expiresAt: expiryDate,
+                    expiresAt: expiryValue,
                     allowOffline: document.getElementById('field_offline').value === 'true'
                 };
                 if(currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
@@ -208,7 +222,7 @@
                 await db.ref(currentPath).set(users);
             }
 
-            alert("Berhasil disimpan ke Firebase!");
+            alert("Berhasil disimpan!");
             clearForm();
         }
 
@@ -217,7 +231,8 @@
             if (currentPath === "autologin") {
                 u = rawData.Users[index];
                 document.getElementById('field_id').value = u.ID;
-                document.getElementById('field_expiry').value = u.Expiry;
+                // KONVERSI BALIK KE YYYY-MM-DD AGAR KALENDER MUNCUL TANGGALNYA
+                document.getElementById('field_expiry').value = formatDateToYMD(u.Expiry);
             } else {
                 const arr = Array.isArray(rawData) ? rawData : Object.values(rawData);
                 u = arr[index];
