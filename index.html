@@ -29,7 +29,7 @@
 
     <div class="bg-gradient-to-r from-blue-700 to-indigo-900 p-8 shadow-2xl mb-6 rounded-b-[3rem] border-b border-white/10 text-center">
         <h1 class="text-2xl font-black tracking-tighter italic text-white uppercase">TKS TEAM Smart Admin</h1>
-        <p class="text-[10px] opacity-70 tracking-[0.4em] uppercase mt-1">New Edition • Powered By TKS</p>
+        <p class="text-[10px] opacity-70 tracking-[0.4em] uppercase mt-1">Fix Edition • Ready to Use</p>
     </div>
 
     <div class="max-w-md mx-auto px-4">
@@ -40,7 +40,7 @@
                     <label class="text-[9px] text-blue-400 font-black uppercase tracking-widest ml-2 mb-2 block">Mode Database</label>
                     <select id="lockSelector" onchange="switchDatabase()" class="w-full bg-slate-800 p-3 rounded-xl font-bold text-xs border border-slate-600 text-white outline-none focus:border-blue-500 transition">
                         <option value="lock1">Lock Password</option>
-                        <option value="lock2">Lock Pass & Username</option>
+                        <option value="lock2" selected>Lock Pass & Username</option>
                         <option value="autologin">Lock Auto Login</option>
                     </select>
                 </div>
@@ -73,9 +73,9 @@
             </div>
         </div>
 
-        <div id="userEditorArea" class="glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-emerald-500">
+        <div id="userEditorArea" class="glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-emerald-500 transition-all duration-500">
             <h2 id="formTitle" class="text-emerald-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
-                <i class="fa-solid fa-user-plus mr-2"></i> Edit User
+                <i class="fa-solid fa-user-plus mr-2"></i> Tambah User
             </h2>
             <div class="space-y-4">
                 <div class="space-y-1">
@@ -102,9 +102,14 @@
                     </select>
                 </div>
             </div>
-            <button onclick="saveUser()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-2xl font-black text-xs uppercase shadow-lg active:scale-95 transition">
-                Simpan User
-            </button>
+            <div class="flex gap-2 mt-8">
+                <button id="cancelBtn" onclick="clearForm()" class="hidden flex-1 bg-slate-700 hover:bg-slate-600 text-white p-5 rounded-2xl font-black text-xs uppercase shadow-lg transition">
+                    Batal
+                </button>
+                <button id="submitBtn" onclick="saveUser()" class="flex-[2] bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-2xl font-black text-xs uppercase shadow-lg active:scale-95 transition">
+                    Simpan User
+                </button>
+            </div>
         </div>
 
         <div class="relative mb-6">
@@ -122,6 +127,7 @@
         
         let currentPath = "lock2"; 
         let rawData = null; 
+        let editingIndex = -1; // Variabel Fix untuk melacak baris yang diedit
 
         window.onload = () => { switchDatabase(); };
 
@@ -140,6 +146,7 @@
             document.getElementById('passwordContainer').classList.toggle('hidden', currentPath === "autologin");
             document.getElementById('offlineContainer').classList.toggle('hidden', currentPath === "autologin");
             document.getElementById('configArea').classList.toggle('hidden', currentPath !== "autologin");
+            clearForm(); // Reset form saat ganti database
             loadFirebaseData();
         }
 
@@ -169,10 +176,9 @@
 
                 let usersArray = (currentPath === "autologin") ? (rawData.Users || []) : (Array.isArray(rawData) ? rawData : Object.values(rawData));
                 
-                // Update Stats
                 const total = usersArray.filter(u => u !== null).length;
                 counterEl.innerText = total;
-                progressEl.style.width = Math.min((total / 50) * 100, 100) + "%"; // Visual max 50 user
+                progressEl.style.width = Math.min((total / 50) * 100, 100) + "%";
 
                 if (currentPath === "autologin") {
                     document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
@@ -188,7 +194,7 @@
                     const offColor = offStatus === "YES" ? "text-emerald-400" : "text-red-400";
 
                     list.innerHTML += `
-                        <div class="glass-card p-5 rounded-[2.5rem] shadow-lg mb-4">
+                        <div class="glass-card p-5 rounded-[2.5rem] shadow-lg mb-4 border border-transparent hover:border-blue-500/30 transition-all">
                             <div class="flex justify-between items-center mb-3">
                                 <div class="font-black text-white italic uppercase text-sm truncate pr-4">${name}</div>
                                 <div class="flex gap-2">
@@ -228,9 +234,15 @@
                     const snap = await db.ref(currentPath).once('value');
                     let data = snap.val() || { AdminUrl: "", Marquee: "", Users: [] };
                     const newUser = { ID: devId, Expiry: formatDateToDMY(expVal) };
+                    
                     if(!data.Users) data.Users = [];
-                    const idx = data.Users.findIndex(u => u && u.ID === devId);
-                    if (idx !== -1) data.Users[idx] = newUser; else data.Users.push(newUser);
+                    
+                    // FIX: Gunakan editingIndex jika sedang mode edit
+                    if (editingIndex !== -1) {
+                        data.Users[editingIndex] = newUser;
+                    } else {
+                        data.Users.push(newUser);
+                    }
                     await db.ref(currentPath).set(data);
                 } else {
                     let users = Array.isArray(rawData) ? [...rawData] : (rawData ? Object.values(rawData) : []);
@@ -240,11 +252,17 @@
                         allowOffline: document.getElementById('field_offline').value === 'true'
                     };
                     if(currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
-                    const idx = users.findIndex(u => u && u.id === devId);
-                    if (idx !== -1) users[idx] = newUser; else users.push(newUser);
+                    
+                    // FIX: Gunakan editingIndex jika sedang mode edit
+                    if (editingIndex !== -1) {
+                        users[editingIndex] = newUser;
+                    } else {
+                        users.push(newUser);
+                    }
                     await db.ref(currentPath).set(users);
                 }
-                showToast("User Berhasil Disimpan"); clearForm();
+                showToast(editingIndex !== -1 ? "User Berhasil Diupdate" : "User Berhasil Disimpan");
+                clearForm();
             } catch (e) { showToast("Gagal Simpan", "error"); }
         }
 
@@ -252,12 +270,39 @@
             let usersArray = (currentPath === "autologin") ? rawData.Users : (Array.isArray(rawData) ? rawData : Object.values(rawData));
             const u = usersArray[index];
             if(!u) return;
+
+            editingIndex = index; // Tandai baris yang sedang diedit
+            
+            // Perubahan UI Mode Edit
+            document.getElementById('formTitle').innerHTML = '<i class="fa-solid fa-pen-to-square mr-2"></i> Update User';
+            document.getElementById('userEditorArea').classList.replace('border-emerald-500', 'border-blue-500');
+            document.getElementById('submitBtn').classList.replace('bg-emerald-600', 'bg-blue-600');
+            document.getElementById('cancelBtn').classList.remove('hidden');
+
             document.getElementById('field_id').value = u.id || u.ID;
             document.getElementById('field_username').value = u.username || '';
             document.getElementById('field_password').value = u.key || u.password || '';
             document.getElementById('field_expiry').value = currentPath === "autologin" ? formatDateToYMD(u.Expiry) : u.expiresAt;
-            document.getElementById('field_offline').value = u.allowOffline === true || u.allowOffline === "true" ? "true" : "false";
+            document.getElementById('field_offline').value = (u.allowOffline === true || u.allowOffline === "true") ? "true" : "false";
+            
             window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function clearForm() {
+            editingIndex = -1; // Reset tanda edit
+            
+            // Reset UI ke mode Tambah
+            document.getElementById('formTitle').innerHTML = '<i class="fa-solid fa-user-plus mr-2"></i> Tambah User';
+            document.getElementById('userEditorArea').classList.add('border-emerald-500');
+            document.getElementById('userEditorArea').classList.remove('border-blue-500');
+            document.getElementById('submitBtn').classList.add('bg-emerald-600');
+            document.getElementById('submitBtn').classList.remove('bg-blue-600');
+            document.getElementById('cancelBtn').classList.add('hidden');
+
+            document.getElementById('field_id').value = '';
+            document.getElementById('field_username').value = '';
+            document.getElementById('field_password').value = '';
+            document.getElementById('field_expiry').value = '';
         }
 
         function deleteUser(index) {
@@ -271,13 +316,6 @@
             }
             db.ref(currentPath).set(dataToSave);
             showToast("User Dihapus");
-        }
-
-        function clearForm() {
-            document.getElementById('field_id').value = '';
-            document.getElementById('field_username').value = '';
-            document.getElementById('field_password').value = '';
-            document.getElementById('field_expiry').value = '';
         }
 
         function filterUser() {
