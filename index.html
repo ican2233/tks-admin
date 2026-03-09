@@ -8,6 +8,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        /* Menyesuaikan tampilan kalender agar serasi dengan tema dark */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body class="bg-[#0b0f1a] min-h-screen pb-20 font-sans text-slate-200">
 
@@ -62,7 +69,7 @@
                 </div>
                 <div class="space-y-1">
                     <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Expires Date</label>
-                    <input type="text" id="field_expiry" placeholder="DD/MM/YYYY atau YYYY-MM-DD" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white focus:border-blue-500 outline-none">
+                    <input type="date" id="field_expiry" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white focus:border-blue-500 outline-none">
                 </div>
                 <div id="offlineContainer" class="flex items-center justify-between p-4 bg-slate-800/50 border border-slate-700 rounded-2xl">
                     <label class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Allow Offline</label>
@@ -74,7 +81,7 @@
             </div>
 
             <button onclick="saveUser()" id="btnSave" class="w-full mt-8 bg-emerald-600 text-white p-5 rounded-2xl font-black text-xs uppercase shadow-lg active:scale-95 transition">
-                Simpan
+                Simpan Ke Firebase
             </button>
         </div>
 
@@ -94,7 +101,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let currentPath = "lock2"; 
-        let rawData = null; // Menyimpan data asli dari Firebase (bisa objek atau array)
+        let rawData = null; 
 
         window.onload = () => {
             document.getElementById('lockSelector').value = "lock2";
@@ -109,7 +116,6 @@
             const oContainer = document.getElementById('offlineContainer');
             const cArea = document.getElementById('configArea');
 
-            // Logika Tampilan (Hanya sembunyikan yang tidak perlu)
             uContainer.classList.toggle('hidden', currentPath === "lock1" || currentPath === "autologin");
             pContainer.classList.toggle('hidden', currentPath === "autologin");
             oContainer.classList.toggle('hidden', currentPath === "autologin");
@@ -130,7 +136,6 @@
                 }
 
                 let displayArray = [];
-
                 if (currentPath === "autologin") {
                     displayArray = rawData.Users || [];
                     document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
@@ -141,8 +146,8 @@
 
                 displayArray.forEach((u, index) => {
                     if(!u) return;
-                    const name = u.username || u.ID || u.id;
-                    const exp = u.Expiry || u.expiresAt;
+                    const name = u.username || u.ID || u.id || "No Name";
+                    const exp = u.Expiry || u.expiresAt || "No Exp";
 
                     list.innerHTML += `
                         <div class="bg-slate-900/60 p-5 rounded-[2.5rem] border border-white/5 shadow-lg mb-4">
@@ -164,33 +169,34 @@
 
         async function saveUser() {
             const deviceId = document.getElementById('field_id').value;
+            const expiryDate = document.getElementById('field_expiry').value; // Ambil nilai kalender (YYYY-MM-DD)
+            
             if(!deviceId) return alert("ID Device wajib diisi!");
+            if(!expiryDate) return alert("Tanggal Expired wajib diisi!");
 
             if (currentPath === "autologin") {
-                // FORMAT KHUSUS AUTOLOGIN.JSON
-                let dataToSave = rawData && typeof rawData === 'object' ? rawData : { AdminUrl: "", Marquee: "", Users: [] };
+                let dataToSave = (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) ? rawData : { AdminUrl: "", Marquee: "", Users: [] };
                 dataToSave.AdminUrl = document.getElementById('cfg_adminUrl').value;
                 dataToSave.Marquee = document.getElementById('cfg_marquee').value;
                 if(!dataToSave.Users) dataToSave.Users = [];
 
                 const newUser = {
                     ID: deviceId,
-                    Expiry: document.getElementById('field_expiry').value
+                    Expiry: expiryDate // Menyimpan format standar YYYY-MM-DD agar mudah dibaca sistem
                 };
 
-                const existingIdx = dataToSave.Users.findIndex(u => u && (u.ID === deviceId));
+                const existingIdx = dataToSave.Users.findIndex(u => u && u.ID === deviceId);
                 if (existingIdx !== -1) dataToSave.Users[existingIdx] = newUser;
                 else dataToSave.Users.push(newUser);
 
                 await db.ref(currentPath).set(dataToSave);
             } else {
-                // FORMAT LOCK LAMA (1 & 2)
                 let users = Array.isArray(rawData) ? rawData : (rawData ? Object.values(rawData) : []);
                 const newUser = {
                     id: deviceId,
                     password: document.getElementById('field_password').value,
                     key: document.getElementById('field_password').value,
-                    expiresAt: document.getElementById('field_expiry').value,
+                    expiresAt: expiryDate,
                     allowOffline: document.getElementById('field_offline').value === 'true'
                 };
                 if(currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
@@ -202,7 +208,7 @@
                 await db.ref(currentPath).set(users);
             }
 
-            alert("Berhasil disimpan!");
+            alert("Berhasil disimpan ke Firebase!");
             clearForm();
         }
 
