@@ -9,46 +9,18 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-            cursor: pointer;
-        }
-        .glass-card {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        /* Style untuk Toast */
-        #toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-        }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+        .glass-card { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
         .toast {
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(8px);
-            color: white;
-            padding: 14px 24px;
-            border-radius: 18px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-            margin-bottom: 10px;
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            border-left: 5px solid #10b981;
+            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); color: white; padding: 14px 24px;
+            border-radius: 18px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4); margin-bottom: 10px;
+            font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+            display: flex; align-items: center; border-left: 5px solid #10b981;
             animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.5s forwards;
         }
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes fadeOut {
-            to { opacity: 0; transform: translateY(-10px); }
-        }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
     </style>
 </head>
 <body class="bg-[#0b0f1a] min-h-screen pb-20 font-sans text-slate-200">
@@ -60,25 +32,25 @@
         <p class="text-[10px] opacity-70 tracking-[0.4em] uppercase mt-1">New Edition • Powered By TKS</p>
     </div>
 
-    <div class="max-max-w-md mx-auto px-4">
+    <div class="max-w-md mx-auto px-4">
         
-                <div class="glass-card p-6 rounded-3xl mb-6 shadow-xl relative overflow-hidden">
+        <div class="glass-card p-6 rounded-3xl mb-6 shadow-xl relative overflow-hidden">
             <div class="flex justify-between items-end mb-4">
-                <div>
+                <div class="w-2/3">
                     <label class="text-[9px] text-blue-400 font-black uppercase tracking-widest ml-2 mb-2 block">Mode Database</label>
-                    <select id="lockSelector" onchange="switchDatabase()" class="bg-slate-800 p-3 pr-8 rounded-xl font-bold text-xs border border-slate-600 text-white outline-none focus:border-blue-500 transition">
+                    <select id="lockSelector" onchange="switchDatabase()" class="w-full bg-slate-800 p-3 rounded-xl font-bold text-xs border border-slate-600 text-white outline-none focus:border-blue-500 transition">
                         <option value="lock1">Lock Password</option>
                         <option value="lock2">Lock Pass & Username</option>
-                        <option value="autologin">Lock Auto Login</option>
+                        <option value="autologin">Lock Auto Login (JSON)</option>
                     </select>
                 </div>
                 <div class="text-right">
-                    <p class="text-[8px] text-slate-500 font-bold uppercase tracking-tighter">Total Active User</p>
-                    <p id="totalUserCounter" class="text-3xl font-black text-white italic line-height-none">0</p>
+                    <p class="text-[8px] text-slate-500 font-bold uppercase tracking-tighter">Total User</p>
+                    <p id="totalUserCounter" class="text-3xl font-black text-white italic leading-none">0</p>
                 </div>
             </div>
-            <div class="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-                <div id="progressBar" class="bg-blue-500 h-full transition-all duration-500" style="width: 0%"></div>
+            <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+                <div id="progressBar" class="bg-blue-500 h-full transition-all duration-700 shadow-[0_0_10px_#3b82f6]" style="width: 0%"></div>
             </div>
         </div>
 
@@ -105,7 +77,6 @@
             <h2 id="formTitle" class="text-emerald-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
                 <i class="fa-solid fa-user-plus mr-2"></i> Manajemen User
             </h2>
-            
             <div class="space-y-4">
                 <div class="space-y-1">
                     <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Device ID</label>
@@ -131,7 +102,6 @@
                     </select>
                 </div>
             </div>
-
             <button onclick="saveUser()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-2xl font-black text-xs uppercase shadow-lg active:scale-95 transition">
                 Simpan User
             </button>
@@ -153,10 +123,7 @@
         let currentPath = "lock2"; 
         let rawData = null; 
 
-        window.onload = () => {
-            document.getElementById('lockSelector').value = "lock2";
-            switchDatabase(); 
-        };
+        window.onload = () => { switchDatabase(); };
 
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
@@ -188,21 +155,28 @@
 
         function loadFirebaseData() {
             const list = document.getElementById('userList');
+            const counterEl = document.getElementById('totalUserCounter');
+            const progressEl = document.getElementById('progressBar');
+
             db.ref(currentPath).on('value', (snapshot) => {
                 rawData = snapshot.val();
                 list.innerHTML = ''; 
                 if (!rawData) {
+                    counterEl.innerText = "0"; progressEl.style.width = "0%";
                     list.innerHTML = '<div class="text-center opacity-30 text-xs py-10 uppercase font-bold tracking-widest">Database Kosong</div>';
                     return;
                 }
 
-                let usersArray = [];
+                let usersArray = (currentPath === "autologin") ? (rawData.Users || []) : (Array.isArray(rawData) ? rawData : Object.values(rawData));
+                
+                // Update Stats
+                const total = usersArray.filter(u => u !== null).length;
+                counterEl.innerText = total;
+                progressEl.style.width = Math.min((total / 50) * 100, 100) + "%"; // Visual max 50 user
+
                 if (currentPath === "autologin") {
-                    usersArray = rawData.Users || [];
                     document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
                     document.getElementById('cfg_marquee').value = rawData.Marquee || "";
-                } else {
-                    usersArray = Array.isArray(rawData) ? rawData : Object.values(rawData);
                 }
 
                 usersArray.forEach((u, index) => {
@@ -210,7 +184,7 @@
                     const name = u.username || u.ID || u.id || "Unknown";
                     const exp = u.Expiry || u.expiresAt || "-";
                     const passKey = u.key || u.password || "";
-                    const offStatus = u.allowOffline === true || u.allowOffline === "true" ? "YES" : "NO";
+                    const offStatus = (u.allowOffline === true || u.allowOffline === "true") ? "YES" : "NO";
                     const offColor = offStatus === "YES" ? "text-emerald-400" : "text-red-400";
 
                     list.innerHTML += `
@@ -275,30 +249,27 @@
         }
 
         function editUser(index) {
-            if (currentPath === "autologin") {
-                const u = rawData.Users[index];
-                document.getElementById('field_id').value = u.ID;
-                document.getElementById('field_expiry').value = formatDateToYMD(u.Expiry);
-            } else {
-                const arr = Array.isArray(rawData) ? rawData : Object.values(rawData);
-                const u = arr[index];
-                document.getElementById('field_id').value = u.id;
-                document.getElementById('field_username').value = u.username || '';
-                document.getElementById('field_password').value = u.key || u.password || '';
-                document.getElementById('field_expiry').value = u.expiresAt || '';
-                document.getElementById('field_offline').value = u.allowOffline ? "true" : "false";
-            }
+            let usersArray = (currentPath === "autologin") ? rawData.Users : (Array.isArray(rawData) ? rawData : Object.values(rawData));
+            const u = usersArray[index];
+            if(!u) return;
+            document.getElementById('field_id').value = u.id || u.ID;
+            document.getElementById('field_username').value = u.username || '';
+            document.getElementById('field_password').value = u.key || u.password || '';
+            document.getElementById('field_expiry').value = currentPath === "autologin" ? formatDateToYMD(u.Expiry) : u.expiresAt;
+            document.getElementById('field_offline').value = u.allowOffline === true || u.allowOffline === "true" ? "true" : "false";
             window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
         function deleteUser(index) {
             if(!confirm("Hapus user ini?")) return;
-            if (currentPath === "autologin") { rawData.Users.splice(index, 1); } 
-            else { 
+            let dataToSave;
+            if (currentPath === "autologin") {
+                rawData.Users.splice(index, 1); dataToSave = rawData;
+            } else { 
                 let arr = Array.isArray(rawData) ? [...rawData] : Object.values(rawData);
-                arr.splice(index, 1); rawData = arr;
+                arr.splice(index, 1); dataToSave = arr;
             }
-            db.ref(currentPath).set(rawData);
+            db.ref(currentPath).set(dataToSave);
             showToast("User Dihapus");
         }
 
