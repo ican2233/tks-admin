@@ -127,26 +127,28 @@
             });
         }
 
-                async function saveUser() {
+                        async function saveUser() {
             const deviceId = document.getElementById('field_id').value;
             if(!deviceId) return alert("ID Device wajib diisi!");
 
-            // Ambil nilai dari input password
             const passValue = document.getElementById('field_password').value;
-
+            
+            // Buat objek data dasar
             const newUser = {
                 id: deviceId,
-                username: document.getElementById('field_username').value || "User",
-                // Kita simpan keduanya agar aplikasi tidak error "No value"
                 password: passValue, 
                 key: passValue,
                 expiresAt: document.getElementById('field_expiry').value,
                 allowOffline: document.getElementById('field_offline').value === 'true'
             };
 
-            // Cari apakah ID sudah ada, jika ada kita timpa
+            // LOGIKA KHUSUS: Jika BUKAN lock1, baru tambahkan username
+            if (currentPath !== "lock1") {
+                newUser.username = document.getElementById('field_username').value || "User";
+            }
+
+            // Cari apakah ID sudah ada untuk update, jika tidak ada maka push baru
             const existingIndex = fullData.findIndex(u => u && u.id === deviceId);
-            
             if (existingIndex !== -1) {
                 fullData[existingIndex] = newUser;
             } else {
@@ -154,7 +156,6 @@
             }
 
             try {
-                // SIMPAN SELURUH ARRAY KEMBALI
                 await db.ref(currentPath).set(fullData);
                 alert("Berhasil disimpan ke " + currentPath.toUpperCase());
                 clearForm();
@@ -162,6 +163,7 @@
                 alert("Gagal: " + e.message);
             }
         }
+
 
 
         function editUser(index) {
