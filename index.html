@@ -76,9 +76,7 @@
                 <div class="space-y-4">
                     <input type="text" id="cfg_adminUrl" placeholder="Admin Telegram URL..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
                     <textarea id="cfg_marquee" placeholder="Marquee / Running Text..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none h-16"></textarea>
-                    <button onclick="saveGlobalConfig()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition">
-                        Simpan Config Global
-                    </button>
+                    <button onclick="saveGlobalConfig()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition">Simpan Config Global</button>
                 </div>
             </div>
 
@@ -91,6 +89,13 @@
                     <div id="usernameContainer"><input type="text" id="field_username" placeholder="Username..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none"></div>
                     <div id="passwordContainer"><input type="text" id="field_password" placeholder="Key / Password..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none"></div>
                     <input type="date" id="field_expiry" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
+                    <div id="offlineContainer" class="bg-black/40 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Allow Offline</span>
+                        <select id="field_offline" class="bg-blue-600 text-white font-bold text-[10px] px-3 py-1 rounded-lg outline-none cursor-pointer">
+                            <option value="true">TRUE</option>
+                            <option value="false">FALSE</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="flex gap-2 mt-8">
                     <button id="cancelBtn" onclick="clearForm()" class="hidden flex-1 bg-slate-700 p-5 rounded-2xl font-black text-xs uppercase transition">Batal</button>
@@ -107,21 +112,17 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        window.onload = () => {
-            if (localStorage.getItem('tks_admin_session') === 'active') showPanel();
-        };
+        window.onload = () => { if (localStorage.getItem('tks_admin_session') === 'active') showPanel(); };
 
         async function checkAdminLogin() {
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
-            try {
-                const snapshot = await db.ref('AdminAccount').once('value');
-                const admin = snapshot.val();
-                if (admin && admin.email === email && admin.pass === pass) {
-                    localStorage.setItem('tks_admin_session', 'active');
-                    showPanel();
-                } else { showToast("Email/Password Salah!", "error"); }
-            } catch (e) { showToast("Error Koneksi", "error"); }
+            const snapshot = await db.ref('AdminAccount').once('value');
+            const admin = snapshot.val();
+            if (admin && admin.email === email && admin.pass === pass) {
+                localStorage.setItem('tks_admin_session', 'active');
+                showPanel();
+            } else { showToast("Email/Password Salah!", "error"); }
         }
 
         function showPanel() {
@@ -130,10 +131,7 @@
             switchDatabase();
         }
 
-        function doLogout() {
-            localStorage.removeItem('tks_admin_session');
-            location.reload();
-        }
+        function doLogout() { localStorage.removeItem('tks_admin_session'); location.reload(); }
 
         let currentPath = "lock2";
         let rawData = null;
@@ -141,108 +139,105 @@
 
         function switchDatabase() {
             currentPath = document.getElementById('lockSelector').value;
-            document.getElementById('usernameContainer').classList.toggle('hidden', currentPath === "lock1" || currentPath === "autologin");
-            document.getElementById('passwordContainer').classList.toggle('hidden', currentPath === "autologin");
-            document.getElementById('configArea').classList.toggle('hidden', currentPath !== "autologin");
+            const isAuto = currentPath === "autologin";
+            const isLock1 = currentPath === "lock1";
+
+            document.getElementById('usernameContainer').classList.toggle('hidden', isAuto || isLock1);
+            document.getElementById('passwordContainer').classList.toggle('hidden', isAuto);
+            document.getElementById('offlineContainer').classList.toggle('hidden', isAuto);
+            document.getElementById('configArea').classList.toggle('hidden', !isAuto);
+
             clearForm();
             loadFirebaseData();
         }
 
-// GANTI BAGIAN loadFirebaseData() DENGAN INI
-function loadFirebaseData() {
-    const list = document.getElementById('userList');
-    db.ref(currentPath).on('value', (snapshot) => {
-        rawData = snapshot.val();
-        list.innerHTML = '';
-        if (!rawData) { document.getElementById('totalUserCounter').innerText = "0"; return; }
+        function loadFirebaseData() {
+            const list = document.getElementById('userList');
+            db.ref(currentPath).on('value', (snapshot) => {
+                rawData = snapshot.val();
+                list.innerHTML = '';
+                if (!rawData) { document.getElementById('totalUserCounter').innerText = "0"; return; }
 
-        if (currentPath === "autologin") {
-            document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
-            document.getElementById('cfg_marquee').value = rawData.Marquee || "";
+                if (currentPath === "autologin") {
+                    document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
+                    document.getElementById('cfg_marquee').value = rawData.Marquee || "";
+                }
+
+                let usersArray = (currentPath === "autologin") ? (rawData.Users || []) : (Array.isArray(rawData) ? rawData : Object.values(rawData));
+                document.getElementById('totalUserCounter').innerText = usersArray.filter(u => u !== null).length;
+
+                usersArray.forEach((u, index) => {
+                    if(!u) return;
+                    const isAuto = currentPath === "autologin";
+                    const isLock2 = currentPath === "lock2";
+                    const title = (!isAuto && u.username) ? u.username : (u.id || u.ID);
+
+                    const userRow = isLock2 ? `<div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40">USER</span><span>${u.username || "-"}</span></div>` : '';
+                    const keyRow = !isAuto ? `<div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40">KEY</span><span class="text-indigo-400 font-bold">${u.key || u.password || "-"}</span></div>` : '';
+                    const offRow = !isAuto ? `<div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40">OFFLINE</span><span class="${u.allowOffline ? 'text-emerald-400' : 'text-red-400'} font-bold">${u.allowOffline ? 'YES' : 'NO'}</span></div>` : '';
+
+                    list.innerHTML += `
+                        <div class="glass-card p-5 rounded-[2.5rem] mb-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <div class="font-black text-white italic uppercase text-sm truncate pr-4">${title}</div>
+                                <div class="flex gap-2">
+                                    <button onclick="editUser(${index})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><i class="fa-solid fa-pen text-xs"></i></button>
+                                    <button onclick="deleteUser(${index})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20"><i class="fa-solid fa-trash text-xs"></i></button>
+                                </div>
+                            </div>
+                            <div class="bg-black/40 p-4 rounded-2xl text-[10px] space-y-1">
+                                <div class="flex justify-between"><span class="opacity-40">ID</span><span class="text-blue-300 font-bold">${u.id || u.ID}</span></div>
+                                ${userRow}${keyRow}
+                                <div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40">EXP</span><span class="text-amber-400 font-bold">${u.Expiry || u.expiresAt || "-"}</span></div>
+                                ${offRow}
+                            </div>
+                        </div>`;
+                });
+            });
         }
 
-        let usersArray = (currentPath === "autologin") ? (rawData.Users || []) : (Array.isArray(rawData) ? rawData : Object.values(rawData));
-        document.getElementById('totalUserCounter').innerText = usersArray.filter(u => u !== null).length;
-
-        usersArray.forEach((u, index) => {
-            if(!u) return;
-            
-            // Logika baru: Cek apakah ini mode autologin atau bukan
-            const isAuto = currentPath === "autologin";
-            const name = isAuto ? u.ID : (u.username || u.id || "Unknown");
-            
-            // Tampilan Key hanya muncul jika BUKAN autologin
-            const keyRow = isAuto ? '' : `
-                <div class="flex justify-between border-t border-white/5 pt-1 mt-1"> 
-                    <span class="opacity-40 uppercase">Key</span> 
-                    <span class="text-indigo-400 font-bold">${u.key || u.password || "-"}</span> 
-                </div>`;
-
-            list.innerHTML += `
-                <div class="glass-card p-5 rounded-[2.5rem] mb-4">
-                    <div class="flex justify-between items-center mb-3">
-                        <div class="font-black text-white italic uppercase text-sm truncate pr-4">${name}</div>
-                        <div class="flex gap-2">
-                            <button onclick="editUser(${index})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><i class="fa-solid fa-pen text-xs"></i></button>
-                            <button onclick="deleteUser(${index})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20"><i class="fa-solid fa-trash text-xs"></i></button>
-                        </div>
-                    </div>
-                    <div class="bg-black/40 p-4 rounded-2xl text-[10px] space-y-1">
-                        <div class="flex justify-between"> <span class="opacity-40 uppercase">ID</span> <span class="text-blue-300 font-bold">${u.id || u.ID}</span> </div>
-                        ${keyRow}
-                        <div class="flex justify-between border-t border-white/5 pt-1 mt-1"> <span class="opacity-40 uppercase">Exp</span> <span class="text-amber-400 font-bold">${u.Expiry || u.expiresAt || "-"}</span> </div>
-                    </div>
-                </div>`;
-        });
-    });
-}
-
-
         async function saveGlobalConfig() {
-            try {
-                const snap = await db.ref(currentPath).once('value');
-                let data = snap.val() || { Users: [] };
-                data.AdminUrl = document.getElementById('cfg_adminUrl').value;
-                data.Marquee = document.getElementById('cfg_marquee').value;
-                await db.ref(currentPath).set(data);
-                showToast("Config Global Diupdate");
-            } catch (e) { showToast("Gagal Update", "error"); }
+            const snap = await db.ref(currentPath).once('value');
+            let data = snap.val() || { Users: [] };
+            data.AdminUrl = document.getElementById('cfg_adminUrl').value;
+            data.Marquee = document.getElementById('cfg_marquee').value;
+            await db.ref(currentPath).set(data);
+            showToast("Config Global Diupdate");
         }
 
         async function saveUser() {
             const devId = document.getElementById('field_id').value;
             const expVal = document.getElementById('field_expiry').value;
-            const keyVal = document.getElementById('field_password').value;
             if(!devId || !expVal) return showToast("Wajib Isi!", "error");
 
-            try {
-                let dataToSave;
-                if (currentPath === "autologin") {
-                    const snap = await db.ref(currentPath).once('value');
-                    let data = snap.val() || { AdminUrl: "", Marquee: "", Users: [] };
-                    const newUser = { ID: devId, Expiry: formatDateToDMY(expVal) };
-                    if(!data.Users) data.Users = [];
-                    if (editingIndex !== -1) data.Users[editingIndex] = newUser; else data.Users.push(newUser);
-                    dataToSave = data;
-                } else {
-                    let users = Array.isArray(rawData) ? [...rawData] : (rawData ? Object.values(rawData) : []);
-                    const newUser = { id: devId, key: keyVal, expiresAt: expVal, allowOffline: true };
-                    if(currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
-                    if (editingIndex !== -1) users[editingIndex] = newUser; else users.push(newUser);
-                    dataToSave = users;
-                }
-                await db.ref(currentPath).set(dataToSave);
-                showToast("Berhasil Disimpan");
-                clearForm();
-            } catch (e) { showToast("Gagal Simpan", "error"); }
+            let dataToSave;
+            if (currentPath === "autologin") {
+                const snap = await db.ref(currentPath).once('value');
+                let data = snap.val() || { Users: [] };
+                const newUser = { ID: devId, Expiry: formatDateToDMY(expVal) };
+                if (editingIndex !== -1) data.Users[editingIndex] = newUser; else data.Users.push(newUser);
+                dataToSave = data;
+            } else {
+                let users = Array.isArray(rawData) ? [...rawData] : (rawData ? Object.values(rawData) : []);
+                const newUser = { 
+                    id: devId, key: document.getElementById('field_password').value, 
+                    password: document.getElementById('field_password').value, 
+                    expiresAt: expVal, allowOffline: document.getElementById('field_offline').value === 'true'
+                };
+                if(currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
+                if (editingIndex !== -1) users[editingIndex] = newUser; else users.push(newUser);
+                dataToSave = users;
+            }
+            await db.ref(currentPath).set(dataToSave);
+            showToast("Berhasil!"); clearForm();
         }
 
         function deleteUser(index) {
+            if(!confirm("Hapus user ini?")) return;
             let usersArray = (currentPath === "autologin") ? [...rawData.Users] : (Array.isArray(rawData) ? [...rawData] : Object.values(rawData));
             usersArray.splice(index, 1);
-            let dataToSave = (currentPath === "autologin") ? { ...rawData, Users: usersArray } : usersArray;
-            db.ref(currentPath).set(dataToSave);
-            showToast("User Terhapus", "error");
+            db.ref(currentPath).set(currentPath === "autologin" ? { ...rawData, Users: usersArray } : usersArray);
+            showToast("Terhapus", "error");
         }
 
         function editUser(index) {
@@ -254,26 +249,23 @@ function loadFirebaseData() {
             document.getElementById('field_id').value = u.id || u.ID;
             document.getElementById('field_username').value = u.username || '';
             document.getElementById('field_password').value = u.key || u.password || '';
+            document.getElementById('field_offline').value = String(u.allowOffline || 'false');
             document.getElementById('field_expiry').value = currentPath === "autologin" ? formatDateToYMD(u.Expiry) : u.expiresAt;
             window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
         function clearForm() {
-            editingIndex = -1;
-            document.getElementById('formTitle').innerText = "Tambah User";
+            editingIndex = -1; document.getElementById('formTitle').innerText = "Tambah User";
             document.getElementById('cancelBtn').classList.add('hidden');
-            document.getElementById('field_id').value = '';
-            document.getElementById('field_username').value = '';
-            document.getElementById('field_password').value = '';
-            document.getElementById('field_expiry').value = '';
+            document.getElementById('field_id').value = ''; document.getElementById('field_username').value = '';
+            document.getElementById('field_password').value = ''; document.getElementById('field_expiry').value = '';
         }
 
         function showToast(m, t='success') {
             const c = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = `toast ${t==='error'?'border-red-500':'border-emerald-500'}`;
-            toast.innerHTML = m;
-            c.appendChild(toast);
+            toast.innerHTML = m; c.appendChild(toast);
             setTimeout(() => toast.remove(), 2500);
         }
 
