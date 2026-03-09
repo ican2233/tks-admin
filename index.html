@@ -35,7 +35,7 @@
                     <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Device ID</label>
                     <input type="text" id="field_id" placeholder="Contoh: a880d1..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white focus:border-blue-500 outline-none shadow-inner">
                 </div>
-                <div class="space-y-1">
+                <div id="usernameContainer" class="space-y-1">
                     <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Username</label>
                     <input type="text" id="field_username" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white focus:border-blue-500 outline-none">
                 </div>
@@ -70,23 +70,32 @@
     </div>
 
     <script>
-        // --- KONFIGURASI FIREBASE (SUDAH DISESUAIKAN) ---
+        // --- KONFIGURASI FIREBASE ---
         const firebaseConfig = {
             databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com"
         };
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        let currentPath = "lock2"; // Default ke lock2 agar sesuai tes terakhir
-        let fullData = []; // Simpan data sebagai Array lokal
+        let currentPath = "lock2"; 
+        let fullData = []; 
 
         window.onload = () => {
             document.getElementById('lockSelector').value = "lock2";
-            loadFirebaseData();
+            switchDatabase(); // Jalankan switch untuk mengatur UI awal
         };
 
         function switchDatabase() {
             currentPath = document.getElementById('lockSelector').value;
+            
+            // Sembunyikan Username jika di Lock 1
+            const uContainer = document.getElementById('usernameContainer');
+            if(currentPath === "lock1") {
+                uContainer.classList.add('hidden');
+            } else {
+                uContainer.classList.remove('hidden');
+            }
+            
             loadFirebaseData();
         }
 
@@ -102,15 +111,19 @@
                     return;
                 }
 
-                // Ubah object ke array untuk manajemen yang lebih mudah
                 fullData = Array.isArray(data) ? data : Object.values(data);
 
                 fullData.forEach((u, index) => {
                     if(!u) return;
+
+                    // Logika Judul: Gunakan Username, jika tidak ada pakai ID
+                    const displayName = u.username ? u.username : u.id;
+                    const displayPass = u.password || u.key || "---";
+
                     list.innerHTML += `
-                        <div class="bg-slate-900/60 p-5 rounded-[2.5rem] border border-white/5 shadow-lg">
+                        <div class="bg-slate-900/60 p-5 rounded-[2.5rem] border border-white/5 shadow-lg mb-4">
                             <div class="flex justify-between items-center mb-3">
-                                <div class="font-black text-white italic uppercase">${u.username || 'NO NAME'}</div>
+                                <div class="font-black text-white italic uppercase">${displayName}</div>
                                 <div class="flex gap-2">
                                     <button onclick="editUser(${index})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><i class="fa-solid fa-pen text-xs"></i></button>
                                     <button onclick="deleteUser(${index})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20"><i class="fa-solid fa-trash text-xs"></i></button>
@@ -118,7 +131,7 @@
                             </div>
                             <div class="bg-black/40 p-4 rounded-2xl space-y-1 text-[10px]">
                                 <div class="flex justify-between border-b border-white/5 pb-1"> <span class="opacity-50 uppercase">ID</span> <span class="text-blue-300 font-bold">${u.id}</span> </div>
-                                <div class="flex justify-between border-b border-white/5 py-1"> <span class="opacity-50 uppercase">KEY</span> <span class="text-white font-bold">${u.key || u.password}</span> </div>
+                                <div class="flex justify-between border-b border-white/5 py-1"> <span class="opacity-50 uppercase">KEY</span> <span class="text-white font-bold">${displayPass}</span> </div>
                                 <div class="flex justify-between border-b border-white/5 py-1"> <span class="opacity-50 uppercase">EXP</span> <span class="text-amber-400 font-bold">${u.expiresAt}</span> </div>
                                 <div class="flex justify-between pt-1"> <span class="opacity-50 uppercase">OFFLINE</span> <span class="${u.allowOffline ? 'text-emerald-400' : 'text-red-400'} font-bold">${u.allowOffline ? 'YES' : 'NO'}</span> </div>
                             </div>
@@ -127,26 +140,26 @@
             });
         }
 
-                async function saveUser() {
+        async function saveUser() {
             const deviceId = document.getElementById('field_id').value;
             if(!deviceId) return alert("ID Device wajib diisi!");
 
-            // Ambil nilai dari input password
             const passValue = document.getElementById('field_password').value;
 
             const newUser = {
                 id: deviceId,
-                username: document.getElementById('field_username').value || "User",
-                // Kita simpan keduanya agar aplikasi tidak error "No value"
                 password: passValue, 
                 key: passValue,
                 expiresAt: document.getElementById('field_expiry').value,
                 allowOffline: document.getElementById('field_offline').value === 'true'
             };
 
-            // Cari apakah ID sudah ada, jika ada kita timpa
+            // HANYA tambahkan username jika di LOCK 2
+            if(currentPath === "lock2") {
+                newUser.username = document.getElementById('field_username').value || "User";
+            }
+
             const existingIndex = fullData.findIndex(u => u && u.id === deviceId);
-            
             if (existingIndex !== -1) {
                 fullData[existingIndex] = newUser;
             } else {
@@ -154,7 +167,6 @@
             }
 
             try {
-                // SIMPAN SELURUH ARRAY KEMBALI
                 await db.ref(currentPath).set(fullData);
                 alert("Berhasil disimpan ke " + currentPath.toUpperCase());
                 clearForm();
@@ -163,14 +175,13 @@
             }
         }
 
-
         function editUser(index) {
             const u = fullData[index];
             document.getElementById('field_id').value = u.id;
-            document.getElementById('field_username').value = u.username;
-            document.getElementById('field_password').value = u.key || u.password;
-            document.getElementById('field_expiry').value = u.expiresAt;
-            document.getElementById('field_offline').value = u.allowOffline.toString();
+            document.getElementById('field_username').value = u.username || '';
+            document.getElementById('field_password').value = u.key || u.password || '';
+            document.getElementById('field_expiry').value = u.expiresAt || '';
+            document.getElementById('field_offline').value = u.allowOffline ? u.allowOffline.toString() : 'false';
             window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
