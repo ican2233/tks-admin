@@ -30,11 +30,11 @@
     <div class="max-w-md mx-auto px-4">
         
         <div class="glass-card p-6 rounded-3xl mb-6 shadow-xl">
-            <label class="text-[9px] text-blue-400 font-black uppercase tracking-widest ml-2 mb-2 block">Pilih Mode Database</label>
+            <label class="text-[9px] text-blue-400 font-black uppercase tracking-widest ml-2 mb-2 block">Mode Database</label>
             <select id="lockSelector" onchange="switchDatabase()" class="w-full p-4 bg-slate-800 rounded-2xl font-bold text-sm border border-slate-600 text-white outline-none focus:border-blue-500 transition">
                 <option value="lock1">Lock Password</option>
                 <option value="lock2">Lock Pass & Username</option>
-                <option value="autologin">Lock Autologin (JSON)</option>
+                <option value="autologin">Lock Auto Login</option>
             </select>
         </div>
 
@@ -59,7 +59,7 @@
 
         <div id="userEditorArea" class="glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-emerald-500">
             <h2 id="formTitle" class="text-emerald-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
-                <i class="fa-solid fa-user-plus mr-2"></i> Manajemen User
+                <i class="fa-solid fa-user-plus mr-2"></i> Edit User
             </h2>
             
             <div class="space-y-4">
@@ -89,7 +89,7 @@
             </div>
 
             <button onclick="saveUser()" id="btnSave" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-2xl font-black text-xs uppercase shadow-lg active:scale-95 transition">
-                Simpan User Ke Firebase
+                Simpan
             </button>
         </div>
 
