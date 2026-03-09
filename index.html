@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TKS TEAM Firebase Admin</title>
+    <title>TKS TEAM Smart Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -12,6 +12,11 @@
         input[type="date"]::-webkit-calendar-picker-indicator {
             filter: invert(1);
             cursor: pointer;
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
     </style>
 </head>
@@ -23,8 +28,9 @@
     </div>
 
     <div class="max-w-md mx-auto px-4">
-        <div class="bg-slate-900/80 backdrop-blur-md p-6 rounded-3xl border border-white/5 mb-6 shadow-xl">
-            <label class="text-[9px] text-blue-400 font-black uppercase tracking-widest ml-2 mb-2 block">Pilih Lock</label>
+        
+        <div class="glass-card p-6 rounded-3xl mb-6 shadow-xl">
+            <label class="text-[9px] text-blue-400 font-black uppercase tracking-widest ml-2 mb-2 block">Pilih Mode Database</label>
             <select id="lockSelector" onchange="switchDatabase()" class="w-full p-4 bg-slate-800 rounded-2xl font-bold text-sm border border-slate-600 text-white outline-none focus:border-blue-500 transition">
                 <option value="lock1">Lock Password</option>
                 <option value="lock2">Lock Pass & Username</option>
@@ -32,7 +38,7 @@
             </select>
         </div>
 
-        <div id="configArea" class="hidden bg-slate-900 p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-blue-500 border border-white/5">
+        <div id="configArea" class="hidden glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-blue-500">
             <h2 class="text-blue-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
                 <i class="fa-solid fa-gear mr-2"></i> Config Global
             </h2>
@@ -45,30 +51,33 @@
                     <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Marquee / Running Text</label>
                     <textarea id="cfg_marquee" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white outline-none h-16"></textarea>
                 </div>
+                <button onclick="saveGlobalConfig()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition flex items-center justify-center">
+                    <i class="fa-solid fa-floppy-disk mr-2"></i> Simpan Config Global
+                </button>
             </div>
         </div>
 
-        <div id="userEditorArea" class="bg-slate-900 p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-emerald-500 border border-white/5">
+        <div id="userEditorArea" class="glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-emerald-500">
             <h2 id="formTitle" class="text-emerald-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
-                <i class="fa-solid fa-user-plus mr-2"></i> Edit User
+                <i class="fa-solid fa-user-plus mr-2"></i> Manajemen User
             </h2>
             
             <div class="space-y-4">
                 <div class="space-y-1">
                     <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Device ID</label>
-                    <input type="text" id="field_id" placeholder="Contoh: a880d1..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white focus:border-blue-500 outline-none shadow-inner">
+                    <input type="text" id="field_id" placeholder="ID Device..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white outline-none focus:border-emerald-500">
                 </div>
                 <div id="usernameContainer" class="space-y-1">
                     <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Username</label>
-                    <input type="text" id="field_username" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white focus:border-blue-500 outline-none">
+                    <input type="text" id="field_username" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white outline-none">
                 </div>
                 <div id="passwordContainer" class="space-y-1">
                     <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Password / Key</label>
-                    <input type="text" id="field_password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white focus:border-blue-500 outline-none">
+                    <input type="text" id="field_password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white outline-none">
                 </div>
                 <div class="space-y-1">
                     <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Expires Date</label>
-                    <input type="date" id="field_expiry" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white focus:border-blue-500 outline-none">
+                    <input type="date" id="field_expiry" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white outline-none">
                 </div>
                 <div id="offlineContainer" class="flex items-center justify-between p-4 bg-slate-800/50 border border-slate-700 rounded-2xl">
                     <label class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Allow Offline</label>
@@ -79,26 +88,25 @@
                 </div>
             </div>
 
-            <button onclick="saveUser()" id="btnSave" class="w-full mt-8 bg-emerald-600 text-white p-5 rounded-2xl font-black text-xs uppercase shadow-lg active:scale-95 transition">
-                Simpan Ke Firebase
+            <button onclick="saveUser()" id="btnSave" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-2xl font-black text-xs uppercase shadow-lg active:scale-95 transition">
+                Simpan User Ke Firebase
             </button>
         </div>
 
         <div class="relative mb-6">
             <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-slate-500"></i>
-            <input type="text" id="searchInput" onkeyup="filterUser()" placeholder="Cari ID atau Username..." class="w-full p-5 pl-14 bg-slate-900 rounded-2xl border border-slate-800 outline-none text-sm focus:border-blue-500 shadow-xl">
+            <input type="text" id="searchInput" onkeyup="filterUser()" placeholder="Cari ID atau Username..." class="w-full p-5 pl-14 bg-slate-900 rounded-2xl border border-slate-800 outline-none text-sm focus:border-blue-500 shadow-xl text-white">
         </div>
 
         <div id="userList" class="space-y-4"></div>
     </div>
 
     <script>
-        const firebaseConfig = {
-            databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com"
-        };
-
+        // CONFIGURASI FIREBASE
+        const firebaseConfig = { databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        
         let currentPath = "lock2"; 
         let rawData = null; 
 
@@ -109,20 +117,17 @@
 
         function switchDatabase() {
             currentPath = document.getElementById('lockSelector').value;
-            const uContainer = document.getElementById('usernameContainer');
-            const pContainer = document.getElementById('passwordContainer');
-            const oContainer = document.getElementById('offlineContainer');
-            const cArea = document.getElementById('configArea');
-
-            uContainer.classList.toggle('hidden', currentPath === "lock1" || currentPath === "autologin");
-            pContainer.classList.toggle('hidden', currentPath === "autologin");
-            oContainer.classList.toggle('hidden', currentPath === "autologin");
-            cArea.classList.toggle('hidden', currentPath !== "autologin");
+            
+            // Tampilan UI
+            document.getElementById('usernameContainer').classList.toggle('hidden', currentPath === "lock1" || currentPath === "autologin");
+            document.getElementById('passwordContainer').classList.toggle('hidden', currentPath === "autologin");
+            document.getElementById('offlineContainer').classList.toggle('hidden', currentPath === "autologin");
+            document.getElementById('configArea').classList.toggle('hidden', currentPath !== "autologin");
             
             loadFirebaseData();
         }
 
-        // Fungsi pembantu untuk membalik format tanggal
+        // FORMAT TANGGAL
         function formatDateToDMY(dateStr) {
             if(!dateStr || !dateStr.includes('-')) return dateStr;
             const [y, m, d] = dateStr.split('-');
@@ -135,6 +140,7 @@
             return `${y}-${m}-${d}`;
         }
 
+        // LOAD DATA
         function loadFirebaseData() {
             const list = document.getElementById('userList');
             db.ref(currentPath).on('value', (snapshot) => {
@@ -146,111 +152,127 @@
                     return;
                 }
 
-                let displayArray = [];
+                let usersArray = [];
                 if (currentPath === "autologin") {
-                    displayArray = rawData.Users || [];
+                    usersArray = rawData.Users || [];
                     document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
                     document.getElementById('cfg_marquee').value = rawData.Marquee || "";
                 } else {
-                    displayArray = Array.isArray(rawData) ? rawData : Object.values(rawData);
+                    usersArray = Array.isArray(rawData) ? rawData : Object.values(rawData);
                 }
 
-                displayArray.forEach((u, index) => {
+                usersArray.forEach((u, index) => {
                     if(!u) return;
-                    const name = u.username || u.ID || u.id || "No Name";
-                    const exp = u.Expiry || u.expiresAt || "No Exp";
+                    const name = u.username || u.ID || u.id || "Unknown";
+                    const exp = u.Expiry || u.expiresAt || "-";
 
                     list.innerHTML += `
-                        <div class="bg-slate-900/60 p-5 rounded-[2.5rem] border border-white/5 shadow-lg mb-4">
+                        <div class="glass-card p-5 rounded-[2.5rem] shadow-lg mb-4">
                             <div class="flex justify-between items-center mb-3">
-                                <div class="font-black text-white italic uppercase">${name}</div>
+                                <div class="font-black text-white italic uppercase text-sm truncate pr-4">${name}</div>
                                 <div class="flex gap-2">
-                                    <button onclick="editUser(${index})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><i class="fa-solid fa-pen text-xs"></i></button>
-                                    <button onclick="deleteUser(${index})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20"><i class="fa-solid fa-trash text-xs"></i></button>
+                                    <button onclick="editUser(${index})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20 hover:bg-blue-500 hover:text-white transition"><i class="fa-solid fa-pen text-xs"></i></button>
+                                    <button onclick="deleteUser(${index})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20 hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-trash text-xs"></i></button>
                                 </div>
                             </div>
                             <div class="bg-black/40 p-4 rounded-2xl space-y-1 text-[10px]">
-                                <div class="flex justify-between"> <span class="opacity-50">ID</span> <span class="text-blue-300 font-bold">${u.id || u.ID}</span> </div>
-                                <div class="flex justify-between"> <span class="opacity-50">EXP</span> <span class="text-amber-400 font-bold">${exp}</span> </div>
+                                <div class="flex justify-between"> <span class="opacity-50 uppercase">Device ID</span> <span class="text-blue-300 font-bold">${u.id || u.ID}</span> </div>
+                                <div class="flex justify-between"> <span class="opacity-50 uppercase">Expires At</span> <span class="text-amber-400 font-bold">${exp}</span> </div>
                             </div>
                         </div>`;
                 });
             });
         }
 
+        // SIMPAN CONFIG GLOBAL
+        async function saveGlobalConfig() {
+            if (currentPath !== "autologin") return;
+            try {
+                const adminUrl = document.getElementById('cfg_adminUrl').value;
+                const marquee = document.getElementById('cfg_marquee').value;
+                
+                // Ambil data terbaru agar tidak menimpa array Users
+                const snapshot = await db.ref(currentPath).once('value');
+                let currentData = snapshot.val() || { Users: [] };
+
+                currentData.AdminUrl = adminUrl;
+                currentData.Marquee = marquee;
+
+                await db.ref(currentPath).set(currentData);
+                alert("✅ Config Global Berhasil Disimpan!");
+            } catch (e) {
+                alert("❌ Gagal: " + e.message);
+            }
+        }
+
+        // SIMPAN USER
         async function saveUser() {
             const deviceId = document.getElementById('field_id').value;
-            let expiryValue = document.getElementById('field_expiry').value;
+            const expiryValue = document.getElementById('field_expiry').value;
             
-            if(!deviceId) return alert("ID Device wajib diisi!");
-            if(!expiryValue) return alert("Tanggal Expired wajib diisi!");
+            if(!deviceId || !expiryValue) return alert("Harap isi ID dan Tanggal!");
 
-            if (currentPath === "autologin") {
-                // KONVERSI KE DD/MM/YYYY KHUSUS AUTOLOGIN
-                const formattedDate = formatDateToDMY(expiryValue);
-                
-                let dataToSave = (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) ? rawData : { AdminUrl: "", Marquee: "", Users: [] };
-                dataToSave.AdminUrl = document.getElementById('cfg_adminUrl').value;
-                dataToSave.Marquee = document.getElementById('cfg_marquee').value;
-                if(!dataToSave.Users) dataToSave.Users = [];
+            try {
+                if (currentPath === "autologin") {
+                    const formattedDate = formatDateToDMY(expiryValue);
+                    const snapshot = await db.ref(currentPath).once('value');
+                    let data = snapshot.val() || { AdminUrl: "", Marquee: "", Users: [] };
+                    if(!data.Users) data.Users = [];
 
-                const newUser = {
-                    ID: deviceId,
-                    Expiry: formattedDate 
-                };
+                    const newUser = { ID: deviceId, Expiry: formattedDate };
+                    const idx = data.Users.findIndex(u => u && u.ID === deviceId);
+                    
+                    if (idx !== -1) data.Users[idx] = newUser;
+                    else data.Users.push(newUser);
 
-                const existingIdx = dataToSave.Users.findIndex(u => u && u.ID === deviceId);
-                if (existingIdx !== -1) dataToSave.Users[existingIdx] = newUser;
-                else dataToSave.Users.push(newUser);
+                    await db.ref(currentPath).set(data);
+                } else {
+                    let users = Array.isArray(rawData) ? [...rawData] : (rawData ? Object.values(rawData) : []);
+                    const newUser = {
+                        id: deviceId,
+                        password: document.getElementById('field_password').value,
+                        key: document.getElementById('field_password').value,
+                        expiresAt: expiryValue,
+                        allowOffline: document.getElementById('field_offline').value === 'true'
+                    };
+                    if(currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
 
-                await db.ref(currentPath).set(dataToSave);
-            } else {
-                let users = Array.isArray(rawData) ? rawData : (rawData ? Object.values(rawData) : []);
-                const newUser = {
-                    id: deviceId,
-                    password: document.getElementById('field_password').value,
-                    key: document.getElementById('field_password').value,
-                    expiresAt: expiryValue,
-                    allowOffline: document.getElementById('field_offline').value === 'true'
-                };
-                if(currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
+                    const idx = users.findIndex(u => u && u.id === deviceId);
+                    if (idx !== -1) users[idx] = newUser;
+                    else users.push(newUser);
 
-                const existingIdx = users.findIndex(u => u && u.id === deviceId);
-                if (existingIdx !== -1) users[existingIdx] = newUser;
-                else users.push(newUser);
-
-                await db.ref(currentPath).set(users);
+                    await db.ref(currentPath).set(users);
+                }
+                alert("✅ Data User Berhasil Disimpan!");
+                clearForm();
+            } catch (e) {
+                alert("❌ Gagal Simpan: " + e.message);
             }
-
-            alert("Berhasil disimpan!");
-            clearForm();
         }
 
         function editUser(index) {
-            let u;
             if (currentPath === "autologin") {
-                u = rawData.Users[index];
+                const u = rawData.Users[index];
                 document.getElementById('field_id').value = u.ID;
-                // KONVERSI BALIK KE YYYY-MM-DD AGAR KALENDER MUNCUL TANGGALNYA
                 document.getElementById('field_expiry').value = formatDateToYMD(u.Expiry);
             } else {
                 const arr = Array.isArray(rawData) ? rawData : Object.values(rawData);
-                u = arr[index];
+                const u = arr[index];
                 document.getElementById('field_id').value = u.id;
                 document.getElementById('field_username').value = u.username || '';
                 document.getElementById('field_password').value = u.key || u.password || '';
                 document.getElementById('field_expiry').value = u.expiresAt || '';
-                document.getElementById('field_offline').value = u.allowOffline ? u.allowOffline.toString() : 'false';
+                document.getElementById('field_offline').value = u.allowOffline ? "true" : "false";
             }
             window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
         function deleteUser(index) {
-            if(!confirm("Hapus user ini?")) return;
+            if(!confirm("Hapus user ini selamanya?")) return;
             if (currentPath === "autologin") {
                 rawData.Users.splice(index, 1);
             } else {
-                let arr = Array.isArray(rawData) ? rawData : Object.values(rawData);
+                let arr = Array.isArray(rawData) ? [...rawData] : Object.values(rawData);
                 arr.splice(index, 1);
                 rawData = arr;
             }
