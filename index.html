@@ -28,18 +28,17 @@
 
         <div id="configArea" class="hidden bg-slate-900 p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-blue-500 border border-white/5">
             <h2 class="text-blue-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
-                <i class="fa-solid fa-gears mr-2"></i> Global Config
+                <i class="fa-solid fa-gear mr-2"></i> Config Global
             </h2>
             <div class="space-y-4">
                 <div class="space-y-1">
-                    <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Admin URL</label>
+                    <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Admin Telegram URL</label>
                     <input type="text" id="cfg_adminUrl" placeholder="https://t.me/..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white outline-none">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Marquee Message</label>
-                    <textarea id="cfg_marquee" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white outline-none h-20"></textarea>
+                    <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Marquee / Running Text</label>
+                    <textarea id="cfg_marquee" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white outline-none h-16"></textarea>
                 </div>
-                <button onclick="saveGlobalConfig()" class="w-full bg-blue-600 text-white p-3 rounded-xl font-bold text-[10px] uppercase shadow-lg active:scale-95 transition">Update Global Info</button>
             </div>
         </div>
 
@@ -75,7 +74,7 @@
             </div>
 
             <button onclick="saveUser()" id="btnSave" class="w-full mt-8 bg-emerald-600 text-white p-5 rounded-2xl font-black text-xs uppercase shadow-lg active:scale-95 transition">
-                Simpan User
+                Simpan
             </button>
         </div>
 
@@ -95,11 +94,11 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let currentPath = "lock2"; 
-        let fullRawData = null; // Menyimpan objek utuh dari Firebase
+        let rawData = null; // Menyimpan data asli dari Firebase (bisa objek atau array)
 
         window.onload = () => {
             document.getElementById('lockSelector').value = "lock2";
-            switchDatabase();
+            switchDatabase(); 
         };
 
         function switchDatabase() {
@@ -110,20 +109,11 @@
             const oContainer = document.getElementById('offlineContainer');
             const cArea = document.getElementById('configArea');
 
-            // Reset UI
-            uContainer.classList.remove('hidden');
-            pContainer.classList.remove('hidden');
-            oContainer.classList.remove('hidden');
-            cArea.classList.add('hidden');
-
-            if(currentPath === "lock1") {
-                uContainer.classList.add('hidden');
-            } else if (currentPath === "autologin") {
-                uContainer.classList.add('hidden');
-                pContainer.classList.add('hidden');
-                oContainer.classList.add('hidden');
-                cArea.classList.remove('hidden');
-            }
+            // Logika Tampilan (Hanya sembunyikan yang tidak perlu)
+            uContainer.classList.toggle('hidden', currentPath === "lock1" || currentPath === "autologin");
+            pContainer.classList.toggle('hidden', currentPath === "autologin");
+            oContainer.classList.toggle('hidden', currentPath === "autologin");
+            cArea.classList.toggle('hidden', currentPath !== "autologin");
             
             loadFirebaseData();
         }
@@ -131,32 +121,33 @@
         function loadFirebaseData() {
             const list = document.getElementById('userList');
             db.ref(currentPath).on('value', (snapshot) => {
-                fullRawData = snapshot.val();
+                rawData = snapshot.val();
                 list.innerHTML = ''; 
 
-                if (!fullRawData) {
+                if (!rawData) {
                     list.innerHTML = '<div class="text-center opacity-30 text-xs py-10 uppercase font-bold tracking-widest">Database Kosong</div>';
                     return;
                 }
 
-                let usersArray = [];
+                let displayArray = [];
+
                 if (currentPath === "autologin") {
-                    usersArray = fullRawData.Users || [];
-                    document.getElementById('cfg_adminUrl').value = fullRawData.AdminUrl || "";
-                    document.getElementById('cfg_marquee').value = fullRawData.Marquee || "";
+                    displayArray = rawData.Users || [];
+                    document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
+                    document.getElementById('cfg_marquee').value = rawData.Marquee || "";
                 } else {
-                    usersArray = Array.isArray(fullRawData) ? fullRawData : Object.values(fullRawData);
+                    displayArray = Array.isArray(rawData) ? rawData : Object.values(rawData);
                 }
 
-                usersArray.forEach((u, index) => {
+                displayArray.forEach((u, index) => {
                     if(!u) return;
-                    const displayName = u.username || u.ID || u.id;
-                    const displayExp = u.Expiry || u.expiresAt || "---";
+                    const name = u.username || u.ID || u.id;
+                    const exp = u.Expiry || u.expiresAt;
 
                     list.innerHTML += `
                         <div class="bg-slate-900/60 p-5 rounded-[2.5rem] border border-white/5 shadow-lg mb-4">
                             <div class="flex justify-between items-center mb-3">
-                                <div class="font-black text-white italic uppercase">${displayName}</div>
+                                <div class="font-black text-white italic uppercase">${name}</div>
                                 <div class="flex gap-2">
                                     <button onclick="editUser(${index})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><i class="fa-solid fa-pen text-xs"></i></button>
                                     <button onclick="deleteUser(${index})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20"><i class="fa-solid fa-trash text-xs"></i></button>
@@ -164,7 +155,7 @@
                             </div>
                             <div class="bg-black/40 p-4 rounded-2xl space-y-1 text-[10px]">
                                 <div class="flex justify-between"> <span class="opacity-50">ID</span> <span class="text-blue-300 font-bold">${u.id || u.ID}</span> </div>
-                                <div class="flex justify-between"> <span class="opacity-50">EXP</span> <span class="text-amber-400 font-bold">${displayExp}</span> </div>
+                                <div class="flex justify-between"> <span class="opacity-50">EXP</span> <span class="text-amber-400 font-bold">${exp}</span> </div>
                             </div>
                         </div>`;
                 });
@@ -176,25 +167,25 @@
             if(!deviceId) return alert("ID Device wajib diisi!");
 
             if (currentPath === "autologin") {
-                // Logika Autologin
-                if (!fullRawData) fullRawData = { AdminUrl: "", Marquee: "", Users: [] };
-                if (!fullRawData.Users) fullRawData.Users = [];
+                // FORMAT KHUSUS AUTOLOGIN.JSON
+                let dataToSave = rawData && typeof rawData === 'object' ? rawData : { AdminUrl: "", Marquee: "", Users: [] };
+                dataToSave.AdminUrl = document.getElementById('cfg_adminUrl').value;
+                dataToSave.Marquee = document.getElementById('cfg_marquee').value;
+                if(!dataToSave.Users) dataToSave.Users = [];
 
                 const newUser = {
                     ID: deviceId,
                     Expiry: document.getElementById('field_expiry').value
                 };
 
-                const existingIndex = fullRawData.Users.findIndex(u => u && u.ID === deviceId);
-                if (existingIndex !== -1) {
-                    fullRawData.Users[existingIndex] = newUser;
-                } else {
-                    fullRawData.Users.push(newUser);
-                }
+                const existingIdx = dataToSave.Users.findIndex(u => u && (u.ID === deviceId));
+                if (existingIdx !== -1) dataToSave.Users[existingIdx] = newUser;
+                else dataToSave.Users.push(newUser);
+
+                await db.ref(currentPath).set(dataToSave);
             } else {
-                // Logika Lock 1 & 2
-                let usersArray = Array.isArray(fullRawData) ? fullRawData : (fullRawData ? Object.values(fullRawData) : []);
-                
+                // FORMAT LOCK LAMA (1 & 2)
+                let users = Array.isArray(rawData) ? rawData : (rawData ? Object.values(rawData) : []);
                 const newUser = {
                     id: deviceId,
                     password: document.getElementById('field_password').value,
@@ -204,41 +195,26 @@
                 };
                 if(currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
 
-                const existingIndex = usersArray.findIndex(u => u && u.id === deviceId);
-                if (existingIndex !== -1) usersArray[existingIndex] = newUser;
-                else usersArray.push(newUser);
-                
-                fullRawData = usersArray;
+                const existingIdx = users.findIndex(u => u && u.id === deviceId);
+                if (existingIdx !== -1) users[existingIdx] = newUser;
+                else users.push(newUser);
+
+                await db.ref(currentPath).set(users);
             }
 
-            try {
-                await db.ref(currentPath).set(fullRawData);
-                alert("Berhasil disimpan!");
-                clearForm();
-            } catch (e) { alert("Gagal: " + e.message); }
-        }
-
-        async function saveGlobalConfig() {
-            if (currentPath !== "autologin") return;
-            const updates = {
-                AdminUrl: document.getElementById('cfg_adminUrl').value,
-                Marquee: document.getElementById('cfg_marquee').value
-            };
-            try {
-                await db.ref(currentPath).update(updates);
-                alert("Global Config diperbarui!");
-            } catch (e) { alert("Gagal: " + e.message); }
+            alert("Berhasil disimpan!");
+            clearForm();
         }
 
         function editUser(index) {
             let u;
             if (currentPath === "autologin") {
-                u = fullRawData.Users[index];
+                u = rawData.Users[index];
                 document.getElementById('field_id').value = u.ID;
                 document.getElementById('field_expiry').value = u.Expiry;
             } else {
-                const usersArray = Array.isArray(fullRawData) ? fullRawData : Object.values(fullRawData);
-                u = usersArray[index];
+                const arr = Array.isArray(rawData) ? rawData : Object.values(rawData);
+                u = arr[index];
                 document.getElementById('field_id').value = u.id;
                 document.getElementById('field_username').value = u.username || '';
                 document.getElementById('field_password').value = u.key || u.password || '';
@@ -251,13 +227,13 @@
         function deleteUser(index) {
             if(!confirm("Hapus user ini?")) return;
             if (currentPath === "autologin") {
-                fullRawData.Users.splice(index, 1);
+                rawData.Users.splice(index, 1);
             } else {
-                let usersArray = Array.isArray(fullRawData) ? fullRawData : Object.values(fullRawData);
-                usersArray.splice(index, 1);
-                fullRawData = usersArray;
+                let arr = Array.isArray(rawData) ? rawData : Object.values(rawData);
+                arr.splice(index, 1);
+                rawData = arr;
             }
-            db.ref(currentPath).set(fullRawData);
+            db.ref(currentPath).set(rawData);
         }
 
         function clearForm() {
