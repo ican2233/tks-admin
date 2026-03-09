@@ -106,25 +106,42 @@
                 fullData = Array.isArray(data) ? data : Object.values(data);
 
                 fullData.forEach((u, index) => {
-                    if(!u) return;
-                    list.innerHTML += `
-                        <div class="bg-slate-900/60 p-5 rounded-[2.5rem] border border-white/5 shadow-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <div class="font-black text-white italic uppercase">${u.username || 'NO NAME'}</div>
-                                <div class="flex gap-2">
-                                    <button onclick="editUser(${index})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><i class="fa-solid fa-pen text-xs"></i></button>
-                                    <button onclick="deleteUser(${index})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20"><i class="fa-solid fa-trash text-xs"></i></button>
-                                </div>
-                            </div>
-                            <div class="bg-black/40 p-4 rounded-2xl space-y-1 text-[10px]">
-                                <div class="flex justify-between border-b border-white/5 pb-1"> <span class="opacity-50 uppercase">ID</span> <span class="text-blue-300 font-bold">${u.id}</span> </div>
-                                <div class="flex justify-between border-b border-white/5 py-1"> <span class="opacity-50 uppercase">KEY</span> <span class="text-white font-bold">${u.key || u.password}</span> </div>
-                                <div class="flex justify-between border-b border-white/5 py-1"> <span class="opacity-50 uppercase">EXP</span> <span class="text-amber-400 font-bold">${u.expiresAt}</span> </div>
-                                <div class="flex justify-between pt-1"> <span class="opacity-50 uppercase">OFFLINE</span> <span class="${u.allowOffline ? 'text-emerald-400' : 'text-red-400'} font-bold">${u.allowOffline ? 'YES' : 'NO'}</span> </div>
-                            </div>
-                        </div>`;
-                });
-            });
+    if (!u) return; // Lewati jika data kosong/null
+    
+    // Pastikan kita mengambil username, jika tidak ada pakai ID
+    const displayName = u.username ? u.username : u.id;
+    const displayPass = u.password || u.key || "No Password";
+
+    list.innerHTML += `
+        <div class="bg-slate-900/60 p-5 rounded-[2.5rem] border border-white/5 shadow-lg mb-4">
+            <div class="flex justify-between items-center mb-3">
+                <div class="font-black text-white italic uppercase">${displayName}</div>
+                <div class="flex gap-2">
+                    <button onclick="editUser(${index})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><i class="fa-solid fa-pen text-xs"></i></button>
+                    <button onclick="deleteUser(${index})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20"><i class="fa-solid fa-trash text-xs"></i></button>
+                </div>
+            </div>
+            <div class="bg-black/40 p-4 rounded-2xl space-y-1 text-[10px]">
+                <div class="flex justify-between border-b border-white/5 pb-1"> 
+                    <span class="opacity-50 uppercase">ID</span> 
+                    <span class="text-blue-300 font-bold">${u.id}</span> 
+                </div>
+                <div class="flex justify-between border-b border-white/5 py-1"> 
+                    <span class="opacity-50 uppercase">KEY</span> 
+                    <span class="text-white font-bold">${displayPass}</span> 
+                </div>
+                <div class="flex justify-between border-b border-white/5 py-1"> 
+                    <span class="opacity-50 uppercase">EXP</span> 
+                    <span class="text-amber-400 font-bold">${u.expiresAt}</span> 
+                </div>
+                <div class="flex justify-between pt-1"> 
+                    <span class="opacity-50 uppercase">OFFLINE</span> 
+                    <span class="${u.allowOffline ? 'text-emerald-400' : 'text-red-400'} font-bold">${u.allowOffline ? 'YES' : 'NO'}</span> 
+                </div>
+            </div>
+        </div>`;
+});
+
         }
 
                         async function saveUser() {
