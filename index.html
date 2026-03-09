@@ -13,12 +13,12 @@
 
     <div class="bg-gradient-to-r from-blue-700 to-indigo-900 p-8 shadow-2xl mb-6 rounded-b-[3rem] border-b border-white/10 text-center">
         <h1 class="text-2xl font-black tracking-tighter italic text-white uppercase">TKS TEAM Smart Admin</h1>
-        <p class="text-[10px] opacity-70 tracking-[0.4em] uppercase mt-1">Firebase Edition • Powered By Ican</p>
+        <p class="text-[10px] opacity-70 tracking-[0.4em] uppercase mt-1">New Edition • Powered By TKS</p>
     </div>
 
     <div class="max-w-md mx-auto px-4">
         <div class="bg-slate-900/80 backdrop-blur-md p-6 rounded-3xl border border-white/5 mb-6 shadow-xl">
-            <label class="text-[9px] text-blue-400 font-black uppercase tracking-widest ml-2 mb-2 block">Pilih Database (Node)</label>
+            <label class="text-[9px] text-blue-400 font-black uppercase tracking-widest ml-2 mb-2 block">Pilih Lock</label>
             <select id="lockSelector" onchange="switchDatabase()" class="w-full p-4 bg-slate-800 rounded-2xl font-bold text-sm border border-slate-600 text-white outline-none focus:border-blue-500 transition">
                 <option value="lock1">Lock Password</option>
                 <option value="lock2">Lock Pass & Username</option>
@@ -27,7 +27,7 @@
 
         <div id="userEditorArea" class="bg-slate-900 p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-emerald-500 border border-white/5">
             <h2 id="formTitle" class="text-emerald-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
-                <i class="fa-solid fa-user-plus mr-2"></i> Manajemen User
+                <i class="fa-solid fa-user-plus mr-2"></i> Edit User
             </h2>
             
             <div class="space-y-4">
@@ -40,7 +40,7 @@
                     <input type="text" id="field_username" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white focus:border-blue-500 outline-none">
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Password / Key (PENTING)</label>
+                    <label class="text-[9px] text-slate-500 font-bold uppercase ml-2">Password / Key</label>
                     <input type="text" id="field_password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm text-white focus:border-blue-500 outline-none">
                 </div>
                 <div class="space-y-1">
@@ -57,7 +57,7 @@
             </div>
 
             <button onclick="saveUser()" id="btnSave" class="w-full mt-8 bg-emerald-600 text-white p-5 rounded-2xl font-black text-xs uppercase shadow-lg active:scale-95 transition">
-                Simpan ke Firebase
+                Simpan
             </button>
         </div>
 
