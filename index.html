@@ -149,14 +149,16 @@
     </div>
 
     <script>
-        // --- CONFIGURATION ---
         const SUPER_ADMIN_EMAIL = "suwandiikhsan1@gmail.com"; 
-
         const firebaseConfig = { databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         let loggedInEmail = localStorage.getItem('tks_admin_email');
+        let currentPath = "lock2";
+        let rawData = null;
+        let editingIndex = -1;
+        let deleteIndexTarget = -1;
 
         window.onload = () => { 
             if (localStorage.getItem('tks_admin_session') === 'active') showPanel(); 
@@ -165,11 +167,9 @@
         async function checkAdminLogin() {
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
-            
             const snapshot = await db.ref('AdminAccount').once('value');
             const data = snapshot.val();
             let admins = Array.isArray(data) ? data : (data ? Object.values(data) : []);
-            
             const found = admins.find(a => a && a.email === email && a.pass === pass);
 
             if (found) {
@@ -185,8 +185,6 @@
         function showPanel() {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
-            
-            // Cek apakah yang login adalah OWNER
             if (loggedInEmail === SUPER_ADMIN_EMAIL) {
                 document.getElementById('adminTabNav').classList.remove('hidden');
                 loadAdminList();
@@ -194,10 +192,7 @@
             switchDatabase();
         }
 
-        function doLogout() { 
-            localStorage.clear(); 
-            location.reload(); 
-        }
+        function doLogout() { localStorage.clear(); location.reload(); }
 
         function switchTab(tab) {
             document.getElementById('usersTab').classList.toggle('hidden', tab !== 'users');
@@ -206,101 +201,39 @@
             document.getElementById('tab-admins').className = tab === 'admins' ? 'flex-1 p-3 rounded-2xl bg-amber-600 text-[10px] font-black uppercase italic shadow-lg' : 'flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic';
         }
 
-        // --- ADMIN MANAGEMENT (OWNER ONLY) ---
-        function loadAdminList() {
-            db.ref('AdminAccount').on('value', (snapshot) => {
-                const data = snapshot.val();
-                const list = document.getElementById('adminList');
-                list.innerHTML = '';
-                let admins = Array.isArray(data) ? data : (data ? Object.values(data) : []);
-
-                admins.forEach((admin, index) => {
-                    if(!admin) return;
-                    const isSuper = admin.email === SUPER_ADMIN_EMAIL;
-                    list.innerHTML += `
-                        <div class="glass-card p-4 rounded-2xl flex justify-between items-center border ${isSuper ? 'border-amber-500/30' : 'border-white/5'}">
-                            <div>
-                                <p class="text-[10px] font-black text-white uppercase italic">${admin.email} ${isSuper ? '⭐' : ''}</p>
-                                <p class="text-[9px] text-slate-500 uppercase tracking-widest">Pass: ${admin.pass}</p>
-                            </div>
-                            ${!isSuper ? `<button onclick="confirmDeleteAdmin(${index})" class="w-8 h-8 bg-red-500/10 text-red-400 rounded-lg"><i class="fa-solid fa-user-minus text-xs"></i></button>` : ''}
-                        </div>`;
-                });
-            });
-        }
-
-        async function saveAdmin() {
-            if (loggedInEmail !== SUPER_ADMIN_EMAIL) return;
-            const email = document.getElementById('newAdminEmail').value;
-            const pass = document.getElementById('newAdminPass').value;
-            if(!email || !pass) return showToast("Isi Email & Pass!", "error");
-
-            const snapshot = await db.ref('AdminAccount').once('value');
-            let admins = Array.isArray(snapshot.val()) ? snapshot.val() : Object.values(snapshot.val() || {});
-            
-            const idx = admins.findIndex(a => a.email === email);
-            if(idx > -1) admins[idx].pass = pass; 
-            else admins.push({ email, pass });
-
-            await db.ref('AdminAccount').set(admins);
-            showToast("Admin Diperbarui");
-            document.getElementById('newAdminEmail').value = '';
-            document.getElementById('newAdminPass').value = '';
-        }
-
-        function confirmDeleteAdmin(index) {
-            deleteIndexTarget = index;
-            document.getElementById('confirmModal').classList.remove('hidden');
-            document.getElementById('finalDeleteBtn').onclick = executeDeleteAdmin;
-        }
-
-        async function executeDeleteAdmin() {
-            const snapshot = await db.ref('AdminAccount').once('value');
-            let admins = Array.isArray(snapshot.val()) ? [...snapshot.val()] : Object.values(snapshot.val());
-            admins.splice(deleteIndexTarget, 1);
-            await db.ref('AdminAccount').set(admins);
-            closeConfirm();
-            showToast("Admin Dihapus", "error");
-        }
-
-        // --- USER SYSTEM (STABLE CODE) ---
-        let currentPath = "lock2";
-        let rawData = null;
-        let editingIndex = -1;
-        let deleteIndexTarget = -1;
-
         function switchDatabase() {
             currentPath = document.getElementById('lockSelector').value;
             const isAuto = currentPath === "autologin";
             const isLock1 = currentPath === "lock1";
+            
             document.getElementById('usernameContainer').classList.toggle('hidden', isAuto || isLock1);
             document.getElementById('passwordContainer').classList.toggle('hidden', isAuto);
             document.getElementById('offlineContainer').classList.toggle('hidden', isAuto);
             document.getElementById('configArea').classList.toggle('hidden', !isAuto);
+            
             document.getElementById('searchInput').value = ''; 
             clearForm();
             loadFirebaseData();
         }
 
         function loadFirebaseData() {
-    db.ref(currentPath).on('value', (snapshot) => {
-        rawData = snapshot.val();
-        
-        // --- TAMBAHAN: Update input Config Global jika berada di mode autologin ---
-        if (currentPath === "autologin" && rawData) {
-            document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
-            document.getElementById('cfg_marquee').value = rawData.Marquee || "";
+            db.ref(currentPath).on('value', (snapshot) => {
+                rawData = snapshot.val();
+                
+                // ISI OTOMATIS GLOBAL CONFIG JIKA MODE AUTOLOGIN
+                if (currentPath === "autologin" && rawData) {
+                    document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
+                    document.getElementById('cfg_marquee').value = rawData.Marquee || "";
+                }
+                
+                if (!rawData) { 
+                    document.getElementById('totalUserCounter').innerText = "0"; 
+                    document.getElementById('userList').innerHTML = ''; 
+                    return; 
+                }
+                renderUsers();
+            });
         }
-        
-        if (!rawData) { 
-            document.getElementById('totalUserCounter').innerText = "0"; 
-            document.getElementById('userList').innerHTML = ''; 
-            return; 
-        }
-        renderUsers();
-    });
-}
-
 
         function renderUsers() {
             const list = document.getElementById('userList');
@@ -318,6 +251,12 @@
                 count++;
                 const isAuto = currentPath === "autologin";
                 const displayTitle = (!isAuto && u.username) ? u.username : (u.id || u.ID);
+                
+                // Logic Allow Offline (Membaca u.allowOffline)
+                const isOffline = (u.allowOffline === true || u.allowOffline === "true");
+                const offlineBadge = isOffline ? 
+                    '<span class="text-emerald-400 font-bold">YES</span>' : 
+                    '<span class="text-red-400 font-bold">NO</span>';
 
                 list.innerHTML += `
                     <div class="glass-card p-5 rounded-[2.5rem] mb-4">
@@ -333,6 +272,7 @@
                             ${u.username ? `<div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40">USER</span><span>${u.username}</span></div>` : ''}
                             ${!isAuto ? `<div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40">KEY</span><span class="text-indigo-400 font-bold">${u.key || u.password || "-"}</span></div>` : ''}
                             <div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40">EXP</span><span class="text-amber-400 font-bold">${u.Expiry || u.expiresAt || "-"}</span></div>
+                            ${!isAuto ? `<div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40">OFFLINE</span>${offlineBadge}</div>` : ''}
                         </div>
                     </div>`;
             });
@@ -353,9 +293,11 @@
             } else {
                 let users = Array.isArray(rawData) ? [...rawData] : (rawData ? Object.values(rawData) : []);
                 const newUser = { 
-                    id: devId, key: document.getElementById('field_password').value, 
+                    id: devId, 
+                    key: document.getElementById('field_password').value, 
                     password: document.getElementById('field_password').value, 
-                    expiresAt: expVal, allowOffline: document.getElementById('field_offline').value === 'true'
+                    expiresAt: expVal, 
+                    allowOffline: document.getElementById('field_offline').value === 'true'
                 };
                 if(currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
                 if (editingIndex !== -1) users[editingIndex] = newUser; else users.push(newUser);
@@ -363,6 +305,30 @@
             }
             await db.ref(currentPath).set(dataToSave);
             showToast("Berhasil Disimpan!"); clearForm();
+        }
+
+        async function saveGlobalConfig() {
+            let data = rawData || { Users: [] }; 
+            data.AdminUrl = document.getElementById('cfg_adminUrl').value;
+            data.Marquee = document.getElementById('cfg_marquee').value;
+            try {
+                await db.ref(currentPath).set(data);
+                showToast("Config Global Diupdate");
+            } catch (e) { showToast("Gagal Update", "error"); }
+        }
+
+        function editUser(index) {
+            let usersArr = (currentPath === "autologin") ? rawData.Users : (Array.isArray(rawData) ? rawData : Object.values(rawData));
+            const u = usersArr[index];
+            editingIndex = index;
+            document.getElementById('formTitle').innerText = "Update User";
+            document.getElementById('cancelBtn').classList.remove('hidden');
+            document.getElementById('field_id').value = u.id || u.ID;
+            document.getElementById('field_username').value = u.username || '';
+            document.getElementById('field_password').value = u.key || u.password || '';
+            document.getElementById('field_offline').value = String(u.allowOffline || 'false');
+            document.getElementById('field_expiry').value = currentPath === "autologin" ? formatDateToYMD(u.Expiry) : u.expiresAt;
+            window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
         function deleteUser(index) {
@@ -380,6 +346,50 @@
             showToast("User Dihapus", "error");
         }
 
+        function loadAdminList() {
+            db.ref('AdminAccount').on('value', (snapshot) => {
+                const data = snapshot.val();
+                const list = document.getElementById('adminList');
+                list.innerHTML = '';
+                let admins = Array.isArray(data) ? data : (data ? Object.values(data) : []);
+                admins.forEach((admin, index) => {
+                    if(!admin) return;
+                    const isSuper = admin.email === SUPER_ADMIN_EMAIL;
+                    list.innerHTML += `<div class="glass-card p-4 rounded-2xl flex justify-between items-center border ${isSuper ? 'border-amber-500/30' : 'border-white/5'}">
+                        <div><p class="text-[10px] font-black text-white uppercase italic">${admin.email} ${isSuper ? '⭐' : ''}</p><p class="text-[9px] text-slate-500">Pass: ${admin.pass}</p></div>
+                        ${!isSuper ? `<button onclick="confirmDeleteAdmin(${index})" class="w-8 h-8 bg-red-500/10 text-red-400 rounded-lg"><i class="fa-solid fa-user-minus text-xs"></i></button>` : ''}
+                    </div>`;
+                });
+            });
+        }
+
+        async function saveAdmin() {
+            if (loggedInEmail !== SUPER_ADMIN_EMAIL) return;
+            const email = document.getElementById('newAdminEmail').value;
+            const pass = document.getElementById('newAdminPass').value;
+            if(!email || !pass) return showToast("Isi Email & Pass!", "error");
+            const snapshot = await db.ref('AdminAccount').once('value');
+            let admins = Array.isArray(snapshot.val()) ? snapshot.val() : Object.values(snapshot.val() || {});
+            const idx = admins.findIndex(a => a.email === email);
+            if(idx > -1) admins[idx].pass = pass; else admins.push({ email, pass });
+            await db.ref('AdminAccount').set(admins);
+            showToast("Admin Diperbarui");
+            document.getElementById('newAdminEmail').value = ''; document.getElementById('newAdminPass').value = '';
+        }
+
+        function confirmDeleteAdmin(index) {
+            deleteIndexTarget = index;
+            document.getElementById('confirmModal').classList.remove('hidden');
+            document.getElementById('finalDeleteBtn').onclick = async () => {
+                const snapshot = await db.ref('AdminAccount').once('value');
+                let admins = Array.isArray(snapshot.val()) ? [...snapshot.val()] : Object.values(snapshot.val());
+                admins.splice(deleteIndexTarget, 1);
+                await db.ref('AdminAccount').set(admins);
+                closeConfirm();
+                showToast("Admin Dihapus", "error");
+            };
+        }
+
         function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
         function filterUserList() { renderUsers(); }
         function clearForm() {
@@ -388,21 +398,6 @@
             document.getElementById('field_id').value = ''; document.getElementById('field_username').value = '';
             document.getElementById('field_password').value = ''; document.getElementById('field_expiry').value = '';
         }
-
-        function editUser(index) {
-            let usersArr = (currentPath === "autologin") ? rawData.Users : (Array.isArray(rawData) ? rawData : Object.values(rawData));
-            const u = usersArr[index];
-            editingIndex = index;
-            document.getElementById('formTitle').innerText = "Update User";
-            document.getElementById('cancelBtn').classList.remove('hidden');
-            document.getElementById('field_id').value = u.id || u.ID;
-            document.getElementById('field_username').value = u.username || '';
-            document.getElementById('field_password').value = u.key || u.password || '';
-            document.getElementById('field_offline').value = String(u.allowOffline || 'false');
-            document.getElementById('field_expiry').value = currentPath === "autologin" ? formatDateToYMD(u.Expiry) : u.expiresAt;
-            window.scrollTo({top: 0, behavior: 'smooth'});
-        }
-
         function showToast(m, t='success') {
             const c = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -410,24 +405,8 @@
             toast.innerHTML = m; c.appendChild(toast);
             setTimeout(() => toast.remove(), 2500);
         }
-
         function formatDateToDMY(d) { if(!d.includes('-')) return d; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
         function formatDateToYMD(d) { if(!d.includes('/')) return d; const [day,m,y]=d.split('/'); return `${y}-${m}-${day}`; }
-        async function saveGlobalConfig() {
-    // Pastikan kita tidak menimpa seluruh node dengan data kosong
-    let data = rawData || { Users: [] }; 
-    
-    data.AdminUrl = document.getElementById('cfg_adminUrl').value;
-    data.Marquee = document.getElementById('cfg_marquee').value;
-
-    try {
-        await db.ref(currentPath).set(data);
-        showToast("Config Global Diupdate");
-    } catch (error) {
-        showToast("Gagal update config", "error");
-    }
-}
-
     </script>
 </body>
 </html>
