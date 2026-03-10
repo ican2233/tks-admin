@@ -283,12 +283,24 @@
         }
 
         function loadFirebaseData() {
-            db.ref(currentPath).on('value', (snapshot) => {
-                rawData = snapshot.val();
-                if (!rawData) { document.getElementById('totalUserCounter').innerText = "0"; document.getElementById('userList').innerHTML = ''; return; }
-                renderUsers();
-            });
+    db.ref(currentPath).on('value', (snapshot) => {
+        rawData = snapshot.val();
+        
+        // --- TAMBAHAN: Update input Config Global jika berada di mode autologin ---
+        if (currentPath === "autologin" && rawData) {
+            document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
+            document.getElementById('cfg_marquee').value = rawData.Marquee || "";
         }
+        
+        if (!rawData) { 
+            document.getElementById('totalUserCounter').innerText = "0"; 
+            document.getElementById('userList').innerHTML = ''; 
+            return; 
+        }
+        renderUsers();
+    });
+}
+
 
         function renderUsers() {
             const list = document.getElementById('userList');
@@ -402,12 +414,20 @@
         function formatDateToDMY(d) { if(!d.includes('-')) return d; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
         function formatDateToYMD(d) { if(!d.includes('/')) return d; const [day,m,y]=d.split('/'); return `${y}-${m}-${day}`; }
         async function saveGlobalConfig() {
-            let data = rawData || { Users: [] };
-            data.AdminUrl = document.getElementById('cfg_adminUrl').value;
-            data.Marquee = document.getElementById('cfg_marquee').value;
-            await db.ref(currentPath).set(data);
-            showToast("Config Global Diupdate");
-        }
+    // Pastikan kita tidak menimpa seluruh node dengan data kosong
+    let data = rawData || { Users: [] }; 
+    
+    data.AdminUrl = document.getElementById('cfg_adminUrl').value;
+    data.Marquee = document.getElementById('cfg_marquee').value;
+
+    try {
+        await db.ref(currentPath).set(data);
+        showToast("Config Global Diupdate");
+    } catch (error) {
+        showToast("Gagal update config", "error");
+    }
+}
+
     </script>
 </body>
 </html>
