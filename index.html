@@ -39,7 +39,7 @@
                 <i class="fa-solid fa-trash-can text-2xl"></i>
             </div>
             <h3 class="text-white font-black uppercase italic mb-2 text-sm">Hapus Data?</h3>
-            <p class="text-slate-400 text-[10px] mb-8 leading-tight">Tindakan ini tidak dapat dibatalkan.</p>
+            <p class="text-slate-400 text-[10px] mb-8 leading-tight">Data akan dihapus permanen.</p>
             <div class="flex gap-3">
                 <button onclick="closeConfirm()" class="flex-1 bg-slate-800 p-4 rounded-2xl font-black text-[10px] uppercase">Batal</button>
                 <button id="finalDeleteBtn" class="flex-1 bg-red-600 p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg shadow-red-500/20">Hapus</button>
@@ -193,49 +193,49 @@
         let currentPath = "lock2";
         let cachedData = null;
         let editKey = null;
-        let adminEditKey = null; // Key untuk edit admin
+        let adminEditKey = null;
         let deleteKeyTarget = null;
-        let deleteType = 'user'; // 'user' atau 'admin'
+        let deleteType = 'user';
 
         window.onload = () => { 
             if (localStorage.getItem('tks_admin_session') === 'active') {
-                const savedPass = localStorage.getItem('tks_admin_token');
-                if(savedPass) {
-                    auth.signInWithEmailAndPassword(loggedInEmail, savedPass)
-                        .then(() => showPanel())
-                        .catch(() => doLogout());
-                } else {
-                    doLogout();
-                }
+                showPanel();
             } 
         };
 
+        // LOGIN SYSTEM PERBAIKAN
         async function checkAdminLogin() {
-            const email = document.getElementById('loginEmail').value;
-            const pass = document.getElementById('loginPass').value;
+            const email = document.getElementById('loginEmail').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+
             try {
-                await auth.signInWithEmailAndPassword(email, pass);
+                // 1. Ambil data Admin dari Database
                 const snapshot = await db.ref('AdminAccount').once('value');
                 const admins = snapshot.val();
-                let adminFound = (email === SUPER_ADMIN_EMAIL);
+                let adminValid = false;
 
-                if(!adminFound && admins) {
+                // Cek Super Admin Hardcoded
+                if (email === SUPER_ADMIN_EMAIL && pass === "suwandi123") { // Ganti pass super admin jika perlu
+                    adminValid = true;
+                } else if(admins) {
+                    // Cek Admin Biasa dari DB
                     Object.values(admins).forEach(a => {
-                        if(a.email === email && a.pass === pass) adminFound = true;
+                        if(a.email === email && a.pass === pass) adminValid = true;
                     });
                 }
 
-                if (adminFound) {
+                if (adminValid) {
                     localStorage.setItem('tks_admin_session', 'active');
                     localStorage.setItem('tks_admin_email', email);
                     localStorage.setItem('tks_admin_token', pass);
                     loggedInEmail = email;
                     showPanel();
+                    showToast("Login Berhasil!");
                 } else {
-                    showToast("Bukan Akun Admin!", "error");
+                    showToast("Email/Pass Salah!", "error");
                 }
             } catch (error) {
-                showToast("Login Gagal!", "error");
+                showToast("Koneksi Error!", "error");
             }
         }
 
@@ -250,7 +250,6 @@
         }
 
         function doLogout() { 
-            auth.signOut();
             localStorage.clear(); 
             location.reload(); 
         }
@@ -299,8 +298,6 @@
                 count++;
                 const isAuto = currentPath === "autologin";
                 const displayTitle = (!isAuto && u.username) ? u.username : (u.id || u.ID);
-                const isOffline = (u.allowOffline === true || u.allowOffline === "true");
-
                 list.innerHTML += `
                     <div class="glass-card p-5 rounded-[2.5rem] mb-4 border-l-4 border-slate-700">
                         <div class="flex justify-between items-center mb-3">
@@ -339,12 +336,10 @@
 
             const finalKey = editKey || db.ref().push().key;
             const path = (currentPath === 'autologin') ? `autologin/Users/${finalKey}` : `${currentPath}/${finalKey}`;
-            
             await db.ref(path).set(newUser);
-            showToast("User Disimpan!"); clearForm();
+            showToast("User Tersimpan!"); clearForm();
         }
 
-        // --- ADMIN MANAGEMENT (SUPER ADMIN ONLY) ---
         function loadAdminList() {
             db.ref('AdminAccount').on('value', (snap) => {
                 const list = document.getElementById('adminList');
@@ -373,9 +368,7 @@
             
             const finalKey = adminEditKey || db.ref().push().key;
             await db.ref(`AdminAccount/${finalKey}`).set({ email, pass });
-            
-            showToast(adminEditKey ? "Admin Diupdate" : "Admin Baru Ditambah");
-            clearAdminForm();
+            showToast("Admin Tersimpan"); clearAdminForm();
         }
 
         function editAdmin(key) {
@@ -387,7 +380,6 @@
                 document.getElementById('newAdminPass').value = a.pass;
                 document.getElementById('cancelAdminBtn').classList.remove('hidden');
                 document.getElementById('submitAdminBtn').innerText = "Update Admin";
-                window.scrollTo({top: 500, behavior: 'smooth'});
             });
         }
 
@@ -397,10 +389,9 @@
             document.getElementById('newAdminEmail').value = '';
             document.getElementById('newAdminPass').value = '';
             document.getElementById('cancelAdminBtn').classList.add('hidden');
-            document.getElementById('submitAdminBtn').innerText = "Tambah Admin";
+            document.getElementById('submitAdminBtn').innerText = "Simpan Admin";
         }
 
-        // --- GLOBAL DELETE SYSTEM ---
         function triggerDelete(key, type) {
             deleteKeyTarget = key;
             deleteType = type;
@@ -409,53 +400,38 @@
         }
 
         async function executeDelete() {
-            let path = "";
-            if(deleteType === 'admin') {
-                path = `AdminAccount/${deleteKeyTarget}`;
-            } else {
-                path = (currentPath === 'autologin') ? `autologin/Users/${deleteKeyTarget}` : `${currentPath}/${deleteKeyTarget}`;
-            }
+            let path = deleteType === 'admin' ? `AdminAccount/${deleteKeyTarget}` : (currentPath === 'autologin' ? `autologin/Users/${deleteKeyTarget}` : `${currentPath}/${deleteKeyTarget}`);
             await db.ref(path).remove();
             closeConfirm();
             showToast("Berhasil Dihapus", "error");
         }
 
-        // --- BACKUP & RESTORE ---
         async function backupData() {
-            try {
-                const snapshot = await db.ref().once('value');
-                const data = snapshot.val();
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `TKS_Backup_${new Date().toLocaleDateString()}.json`;
-                a.click();
-                showToast("Backup Siap!");
-            } catch (e) { showToast("Gagal Backup", "error"); }
+            const snapshot = await db.ref().once('value');
+            const blob = new Blob([JSON.stringify(snapshot.val(), null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `TKS_Backup.json`;
+            a.click();
+            showToast("Backup Siap!");
         }
 
         function restoreData(input) {
-            const file = input.files[0];
-            if (!file) return;
             const reader = new FileReader();
             reader.onload = async (e) => {
-                try {
-                    const json = JSON.parse(e.target.result);
-                    if (confirm("Ganti semua data cloud dengan file backup ini?")) {
-                        await db.ref().set(json);
-                        showToast("Restore Selesai!");
-                        location.reload();
-                    }
-                } catch (err) { showToast("File Rusak!", "error"); }
+                const json = JSON.parse(e.target.result);
+                if (confirm("Ganti data cloud dengan file ini?")) {
+                    await db.ref().set(json);
+                    location.reload();
+                }
             };
-            reader.readAsText(file);
+            reader.readAsText(input.files[0]);
         }
 
         async function saveGlobalConfig() {
-            const updates = { AdminUrl: document.getElementById('cfg_adminUrl').value, Marquee: document.getElementById('cfg_marquee').value };
-            await db.ref('autologin').update(updates);
-            showToast("Config Disimpan");
+            await db.ref('autologin').update({ AdminUrl: document.getElementById('cfg_adminUrl').value, Marquee: document.getElementById('cfg_marquee').value });
+            showToast("Config Diupdate");
         }
 
         function editUser(key) {
@@ -466,13 +442,10 @@
             document.getElementById('field_id').value = u.id || u.ID;
             document.getElementById('field_username').value = u.username || '';
             document.getElementById('field_password').value = u.key || u.password || '';
-            document.getElementById('field_offline').value = String(u.allowOffline || 'false');
             document.getElementById('field_expiry').value = currentPath === "autologin" ? formatDateToYMD(u.Expiry) : u.expiresAt;
-            window.scrollTo({top: 150, behavior: 'smooth'});
         }
 
         function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
-        function filterUserList() { renderUsers(); }
         function clearForm() {
             editKey = null; document.getElementById('formTitle').innerText = "Tambah User";
             document.getElementById('cancelBtn').classList.add('hidden');
@@ -487,6 +460,7 @@
         }
         function formatDateToDMY(d) { if(!d.includes('-')) return d; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
         function formatDateToYMD(d) { if(!d.includes('/')) return d; const [day,m,y]=d.split('/'); return `${y}-${m}-${day}`; }
+        function filterUserList() { renderUsers(); }
     </script>
 </body>
 </html>
