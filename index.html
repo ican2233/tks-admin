@@ -15,7 +15,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0b0f1a; color: #e2e8f0; }
         .glass-card { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
         .input-style { width: 100%; padding: 14px; background: rgba(0, 0, 0, 0.3); border: 1px solid #334155; border-radius: 16px; font-size: 14px; outline: none; transition: 0.2s; color: white; }
         .input-style:focus { border-color: #3b82f6; }
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
@@ -32,7 +31,7 @@
         <div class="glass-card p-8 rounded-[2.5rem] w-full max-w-xs text-center border-t-4 border-red-500">
             <div class="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-triangle-exclamation text-2xl"></i></div>
             <h3 class="text-white font-extrabold uppercase italic">Konfirmasi</h3>
-            <p id="modalMsg" class="text-slate-400 text-[11px] mt-2 mb-6">Hapus data ini secara permanen?</p>
+            <p class="text-slate-400 text-[11px] mt-2 mb-6">Hapus data ini secara permanen?</p>
             <div class="flex gap-3">
                 <button onclick="closeConfirm()" class="flex-1 bg-slate-800 p-4 rounded-xl font-bold text-[10px] uppercase">Batal</button>
                 <button id="finalDeleteBtn" class="flex-1 bg-red-600 p-4 rounded-xl font-bold text-[10px] uppercase">Hapus</button>
@@ -40,33 +39,18 @@
         </div>
     </div>
 
-    <div id="loginScreen" class="fixed inset-0 z-[500] bg-[#0b0f1a] flex items-center justify-center px-4">
-        <div class="glass-card p-10 rounded-[2.5rem] w-full max-w-sm border-t-4 border-blue-600">
-            <div class="text-center mb-10">
-                <div class="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl"><i class="fa-solid fa-shield-halved text-3xl text-white"></i></div>
-                <h2 class="text-2xl font-extrabold italic uppercase tracking-tighter text-white">Security Login</h2>
-            </div>
-            <div class="space-y-4">
-                <input type="email" id="loginEmail" placeholder="Email" class="input-style">
-                <input type="password" id="loginPass" placeholder="Password" class="input-style">
-                <button onclick="handleLogin()" class="w-full bg-blue-600 p-4 rounded-2xl font-black text-xs uppercase shadow-lg">Authorize Access</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="mainContent" class="hidden">
+    <div id="mainContent">
         <header class="bg-gradient-to-br from-blue-700 to-indigo-900 p-10 rounded-b-[3.5rem] shadow-2xl relative border-b border-white/10">
-            <button onclick="auth.signOut()" class="absolute right-8 top-8 w-10 h-10 bg-black/20 rounded-full text-white/70 hover:text-white transition"><i class="fa-solid fa-power-off text-sm"></i></button>
             <div class="text-center">
                 <h1 class="text-3xl font-black italic uppercase tracking-tighter text-white">TKS TEAM ADMIN</h1>
-                <p id="roleDisplay" class="text-[9px] font-bold text-blue-200/60 mt-2 tracking-widest uppercase"></p>
+                <p id="roleDisplay" class="text-[9px] font-bold text-blue-200/60 mt-2 tracking-widest uppercase">suwandiikhsan1@gmail.com (SUPER ADMIN)</p>
             </div>
         </header>
 
         <main class="max-w-md mx-auto px-6 -mt-8">
-            <div id="tabBar" class="flex p-2 bg-slate-900/50 backdrop-blur rounded-2xl mb-6 border border-white/5">
-                <button onclick="switchTab('users')" id="btn-users" class="flex-1 py-3 rounded-xl bg-blue-600 text-[10px] font-black uppercase italic shadow-lg">User Management</button>
-                <button onclick="switchTab('admins')" id="btn-admins" class="hidden flex-1 py-3 rounded-xl text-slate-400 text-[10px] font-black uppercase italic">Admin Settings</button>
+            <div class="flex p-2 bg-slate-900/50 backdrop-blur rounded-2xl mb-6 border border-white/5">
+                <button class="flex-1 py-3 rounded-xl bg-blue-600 text-[10px] font-black uppercase italic shadow-lg">User Management</button>
+                <button class="flex-1 py-3 rounded-xl text-slate-400 text-[10px] font-black uppercase italic">Admin Settings</button>
             </div>
 
             <section id="usersTab">
@@ -87,7 +71,7 @@
                                 <input type="file" id="fileRestore" class="hidden" accept=".json" onchange="restoreData(this)">
                             </div>
                             <div>
-                                <span class="text-[8px] font-black text-slate-500 uppercase block">Total</span>
+                                <span class="text-[8px] font-black text-slate-500 uppercase block text-right">Total</span>
                                 <span id="userCount" class="text-4xl font-black text-white italic leading-none">0</span>
                             </div>
                         </div>
@@ -120,23 +104,11 @@
 
                 <div id="userList" class="space-y-4"></div>
             </section>
-
-            <section id="adminsTab" class="hidden">
-                <div class="glass-card p-6 rounded-[2rem] mb-6 border-l-4 border-amber-500">
-                    <h3 class="text-amber-400 font-black text-[10px] uppercase tracking-widest mb-6">Manajemen Admin</h3>
-                    <div class="space-y-4">
-                        <input type="email" id="adm_email" placeholder="Email Admin Baru" class="input-style">
-                        <input type="text" id="adm_pass" placeholder="Password" class="input-style">
-                        <button onclick="addAdmin()" class="w-full bg-amber-600 p-4 rounded-xl font-black text-[10px] uppercase">Update Admin</button>
-                    </div>
-                </div>
-                <div id="adminList" class="space-y-3"></div>
-            </section>
         </main>
     </div>
 
     <script>
-        const SUPER_ADMIN = "suwandiikhsan1@gmail.com";
+        // Ganti Config sesuai Firebase milikmu
         const firebaseConfig = {
             apiKey: "AIzaSyDYmuh79olonBM6WH9Uqmv1k46rAgMIzqU",
             authDomain: "admin-panel-tks.firebaseapp.com",
@@ -149,68 +121,68 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const auth = firebase.auth();
 
         let currentMode = "lock2";
         let cachedData = null;
         let editIdx = -1;
 
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('mainContent').classList.remove('hidden');
-                document.getElementById('roleDisplay').innerText = `${user.email} (${user.email === SUPER_ADMIN ? 'SUPER ADMIN' : 'ADMIN'})`;
-                if (user.email === SUPER_ADMIN) {
-                    document.getElementById('btn-admins').classList.remove('hidden');
-                    loadAdminList();
-                }
-                switchDB();
-            } else {
-                document.getElementById('loginScreen').classList.remove('hidden');
-                document.getElementById('mainContent').classList.add('hidden');
-            }
-        });
-
-        async function handleLogin() {
-            const e = document.getElementById('loginEmail').value.trim();
-            const p = document.getElementById('loginPass').value.trim();
-            try { await auth.signInWithEmailAndPassword(e, p); showToast("Success"); } 
-            catch (err) { showToast("Login Gagal!", "error"); }
-        }
-
         function switchDB() {
             currentMode = document.getElementById('dbMode').value;
             const isAuto = currentMode === 'autologin';
             const isLock1 = currentMode === 'lock1';
+
+            // Sembunyikan field yang tidak perlu
             document.getElementById('wrap_user').classList.toggle('hidden', isAuto || isLock1);
             document.getElementById('wrap_pass').classList.toggle('hidden', isAuto);
             document.getElementById('wrap_offline').classList.toggle('hidden', isAuto);
+            
             resetForm();
-            db.ref(currentMode).on('value', (snap) => { cachedData = snap.val(); renderUserList(); });
+            db.ref(currentMode).on('value', (snap) => { 
+                cachedData = snap.val(); 
+                renderUserList(); 
+            });
         }
 
         function renderUserList() {
             const container = document.getElementById('userList');
             const search = document.getElementById('userSearch').value.toLowerCase();
             container.innerHTML = "";
+            
             let items = (currentMode === 'autologin') ? (cachedData?.Users || []) : (Array.isArray(cachedData) ? cachedData : (cachedData ? Object.values(cachedData) : []));
             let count = 0;
+
             items.forEach((u, i) => {
                 if (!u) return;
-                const title = (u.username || u.id || u.ID || "User").toLowerCase();
-                const idVal = (u.id || u.ID || "");
-                if (search && !title.includes(search) && !idVal.toLowerCase().includes(search)) return;
+
+                // LOGIKA PEMBACAAN DATABASE (Ngebaca Tiap Tipe Database)
+                let displayTitle = "";
+                let displaySub = "";
+
+                if (currentMode === "lock2") {
+                    displayTitle = u.username || "No Name";
+                    displaySub = `ID: ${u.id || 'N/A'}`;
+                } else if (currentMode === "lock1") {
+                    displayTitle = u.id || "Unknown ID";
+                    displaySub = `Key: ${u.password || u.key || 'N/A'}`;
+                } else if (currentMode === "autologin") {
+                    displayTitle = u.ID || "Auto Device";
+                    displaySub = `Expiry: ${u.Expiry || 'N/A'}`;
+                }
+
+                // Filter Pencarian
+                if (search && !displayTitle.toLowerCase().includes(search) && !displaySub.toLowerCase().includes(search)) return;
+                
                 count++;
                 container.innerHTML += `
                     <div class="glass-card p-5 rounded-3xl relative border-l-4 border-slate-600">
                         <div class="flex justify-between items-center">
                             <div>
-                                <h4 class="text-white font-extrabold italic uppercase text-sm">${u.username || u.ID || u.id}</h4>
-                                <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">ID: ${idVal}</p>
+                                <h4 class="text-white font-extrabold italic uppercase text-sm">${displayTitle}</h4>
+                                <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">${displaySub}</p>
                             </div>
                             <div class="flex gap-2">
                                 <button onclick="editUser(${i})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
-                                <button onclick="triggerDelete('user', ${i})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button>
+                                <button onclick="triggerDelete(${i})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button>
                             </div>
                         </div>
                     </div>`;
@@ -222,6 +194,7 @@
             const id = document.getElementById('in_id').value.trim();
             const exp = document.getElementById('in_exp').value;
             if (!id || !exp) return showToast("Lengkapi form!", "error");
+
             let toSave;
             if (currentMode === 'autologin') {
                 let base = cachedData || { Users: [] };
@@ -230,7 +203,13 @@
                 toSave = base;
             } else {
                 let list = Array.isArray(cachedData) ? [...cachedData] : (cachedData ? Object.values(cachedData) : []);
-                const obj = { id: id, expiresAt: exp, key: document.getElementById('in_pass').value, password: document.getElementById('in_pass').value, allowOffline: document.getElementById('in_offline').value === "true" };
+                const obj = { 
+                    id: id, 
+                    expiresAt: exp, 
+                    key: document.getElementById('in_pass').value, 
+                    password: document.getElementById('in_pass').value, 
+                    allowOffline: document.getElementById('in_offline').value === "true" 
+                };
                 if (currentMode === 'lock2') obj.username = document.getElementById('in_user').value || "User";
                 if (editIdx > -1) list[editIdx] = obj; else list.push(obj);
                 toSave = list;
@@ -249,21 +228,14 @@
             document.getElementById('in_pass').value = u.key || u.password || "";
             document.getElementById('in_offline').value = String(u.allowOffline);
             document.getElementById('in_exp').value = (currentMode === 'autologin') ? ymd(u.Expiry) : u.expiresAt;
-            window.scrollTo({ top: 200, behavior: 'smooth' });
         }
 
-        function triggerDelete(type, i) {
+        function triggerDelete(i) {
             document.getElementById('confirmModal').classList.remove('hidden');
             document.getElementById('finalDeleteBtn').onclick = async () => {
-                if (type === 'user') {
-                    let items = (currentMode === 'autologin') ? [...cachedData.Users] : (Array.isArray(cachedData) ? [...cachedData] : Object.values(cachedData));
-                    items.splice(i, 1);
-                    await db.ref(currentMode).set((currentMode === 'autologin') ? { ...cachedData, Users: items } : items);
-                } else {
-                    const snap = await db.ref('AdminAccount').once('value');
-                    let a = Array.isArray(snap.val()) ? [...snap.val()] : Object.values(snap.val());
-                    a.splice(i, 1); await db.ref('AdminAccount').set(a);
-                }
+                let items = (currentMode === 'autologin') ? [...cachedData.Users] : (Array.isArray(cachedData) ? [...cachedData] : Object.values(cachedData));
+                items.splice(i, 1);
+                await db.ref(currentMode).set((currentMode === 'autologin') ? { ...cachedData, Users: items } : items);
                 closeConfirm(); showToast("Terhapus", "error");
             };
         }
@@ -288,30 +260,14 @@
             reader.readAsText(file);
         }
 
-        function loadAdminList() {
-            db.ref('AdminAccount').on('value', (snap) => {
-                const list = document.getElementById('adminList'); list.innerHTML = "";
-                const data = Array.isArray(snap.val()) ? snap.val() : (snap.val() ? Object.values(snap.val()) : []);
-                data.forEach((a, i) => { if(!a) return; list.innerHTML += `<div class="glass-card p-4 rounded-2xl flex justify-between items-center border border-white/5"><span class="text-[10px] font-bold text-slate-300 italic">${a.email}</span>${a.email!==SUPER_ADMIN?`<button onclick="triggerDelete('admin', ${i})" class="text-red-400 p-2"><i class="fa-solid fa-user-xmark"></i></button>`:''}</div>`; });
-            });
-        }
-
-        async function addAdmin() {
-            const e = document.getElementById('adm_email').value.trim();
-            const p = document.getElementById('adm_pass').value.trim();
-            if (!e || !p) return showToast("Isi Email & Pass", "error");
-            const snap = await db.ref('AdminAccount').once('value');
-            let a = Array.isArray(snap.val()) ? [...snap.val()] : (snap.val() ? Object.values(snap.val()) : []);
-            a.push({ email: e, pass: p }); await db.ref('AdminAccount').set(a);
-            showToast("Admin Added"); document.getElementById('adm_email').value = ""; document.getElementById('adm_pass').value = "";
-        }
-
         function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
         function showToast(m, t='success') { const c = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${t==='error'?'border-red-500':'border-blue-500'}`; toast.innerHTML = m; c.appendChild(toast); setTimeout(() => toast.remove(), 2500); }
         function resetForm() { editIdx = -1; document.getElementById('formTitle').innerText = "Tambah User Baru"; document.getElementById('btn-cancel').classList.add('hidden'); ['in_id','in_user','in_pass','in_exp'].forEach(id => document.getElementById(id).value = ""); }
-        function switchTab(t) { document.getElementById('usersTab').classList.toggle('hidden', t !== 'users'); document.getElementById('adminsTab').classList.toggle('hidden', t !== 'admins'); document.getElementById('btn-users').className = t === 'users' ? 'flex-1 py-3 rounded-xl bg-blue-600 text-[10px] font-black uppercase italic shadow-lg' : 'flex-1 py-3 rounded-xl text-slate-400 text-[10px] font-black uppercase italic'; document.getElementById('btn-admins').className = t === 'admins' ? 'flex-1 py-3 rounded-xl bg-amber-600 text-white text-[10px] font-black uppercase italic shadow-lg' : 'flex-1 py-3 rounded-xl text-slate-400 text-[10px] font-black uppercase italic'; }
-        function dmy(s) { if(!s.includes('-')) return s; const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; }
-        function ymd(s) { if(!s.includes('/')) return s; const [d,m,y] = s.split('/'); return `${y}-${m}-${d}`; }
+        function dmy(s) { if(!s || !s.includes('-')) return s; const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; }
+        function ymd(s) { if(!s || !s.includes('/')) return s; const [d,m,y] = s.split('/'); return `${y}-${m}-${d}`; }
+
+        // Jalankan awal
+        switchDB();
     </script>
 </body>
 </html>
