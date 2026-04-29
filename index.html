@@ -460,17 +460,43 @@ const db = firebase.database();
 
 
         function confirmDeleteAdmin(index) {
-            deleteIndexTarget = index;
-            document.getElementById('confirmModal').classList.remove('hidden');
-            document.getElementById('finalDeleteBtn').onclick = async () => {
-                const snapshot = await db.ref('AdminAccount').once('value');
-                let admins = Array.isArray(snapshot.val()) ? [...snapshot.val()] : Object.values(snapshot.val());
-                admins.splice(deleteIndexTarget, 1);
-                await db.ref('AdminAccount').set(admins);
+    deleteIndexTarget = index;
+    document.getElementById('confirmModal').classList.remove('hidden');
+    
+    document.getElementById('finalDeleteBtn').onclick = async () => {
+        try {
+            const adminRef = db.ref('AdminAccount');
+            const snapshot = await adminRef.once('value');
+            let admins = snapshot.val();
+
+            // Konversi ke Array jika formatnya Object
+            if (!Array.isArray(admins)) {
+                admins = admins ? Object.values(admins) : [];
+            }
+
+            const targetEmail = admins[deleteIndexTarget].email;
+
+            // Jangan biarkan Super Admin menghapus dirinya sendiri
+            if (targetEmail === SUPER_ADMIN_EMAIL) {
                 closeConfirm();
-                showToast("Admin Dihapus", "error");
-            };
+                return showToast("Super Admin tidak bisa dihapus!", "error");
+            }
+
+            // Hapus dari array
+            admins.splice(deleteIndexTarget, 1);
+
+            // Simpan kembali ke Firebase
+            await adminRef.set(admins);
+            
+            closeConfirm();
+            showToast("Admin Berhasil Dihapus!", "error");
+        } catch (e) {
+            console.error(e);
+            showToast("Gagal Hapus: " + e.message, "error");
         }
+    };
+}
+
 
         function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
         function filterUserList() { renderUsers(); }
