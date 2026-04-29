@@ -434,4 +434,12 @@
         function showToast(m, t='success') {
             const c = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = `toast ${t==='error'?'border
+            toast.className = `toast ${t==='error'?'border-red-500':'border-emerald-500'}`;
+            toast.innerHTML = m; c.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+        function formatDateToDMY(d) { if(!d.includes('-')) return d; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+        function formatDateToYMD(d) { if(!d.includes('/')) return d; const [day,m,y]=d.split('/'); return `${y}-${m}-${day}`; }
+    </script>
+</body>
+</html>
