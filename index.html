@@ -340,43 +340,37 @@ const db = firebase.database();
         }
 
         async function saveUser() {
-    // Ambil user aktif langsung dari Firebase Auth
-    const user = firebase.auth().currentUser;
-    
-    // Jika user null, coba tunggu sebentar atau minta login ulang
-    if (!user) {
-        showToast("Sesi tidak valid, mencoba menyegarkan...", "error");
-        // Opsional: Redirect ke login jika benar-benar tidak ada user
-        setTimeout(() => { location.reload(); }, 1500);
-        return;
-    }
-
-    const devId = document.getElementById('field_id').value.trim();
-    const expVal = document.getElementById('field_expiry').value;
-    
-    if(!devId || !expVal) return showToast("ID & Exp Wajib Isi!", "error");
-
     try {
+        // 1. CEK & REFRESH SESI (Biar gak "Sesi tidak valid")
+        const user = firebase.auth().currentUser;
+        if (!user) {
+            showToast("Sesi habis, silakan login ulang!", "error");
+            setTimeout(() => location.reload(), 1500);
+            return;
+        }
+        
+        // Paksa refresh token biar Firebase yakin ini benar-benar Abang
+        await user.getIdToken(true); 
+
+        const devId = document.getElementById('field_id').value.trim();
+        const expVal = document.getElementById('field_expiry').value;
+        
+        if(!devId || !expVal) return showToast("ID & Exp Wajib Isi!", "error");
+
         let dataToSave;
         if (currentPath === "autologin") {
             let data = rawData || { Users: [] };
             const newUser = { ID: devId, Expiry: formatDateToDMY(expVal) };
-            if (editingIndex !== -1) data.Users[editingIndex] = newUser; 
-            else data.Users.push(newUser);
+            if (editingIndex !== -1) data.Users[editingIndex] = newUser; else data.Users.push(newUser);
             dataToSave = data;
         } else {
-            // Pastikan data lama diambil dengan benar sebelum diedit
             const snapshot = await db.ref(currentPath).once('value');
             let users = snapshot.val();
-            
-            if (!Array.isArray(users)) {
-                users = users ? Object.values(users) : [];
-            }
+            if (!Array.isArray(users)) users = users ? Object.values(users) : [];
 
-                        const newUser = { 
+            const newUser = { 
                 id: devId, 
                 ID: devId,
-                // Baris di bawah ini diubah: hanya isi username jika inputnya tidak kosong
                 ...(document.getElementById('field_username').value.trim() && { 
                     username: document.getElementById('field_username').value.trim() 
                 }),
@@ -387,29 +381,25 @@ const db = firebase.database();
                 allowOffline: document.getElementById('field_offline').value === 'true'
             };
 
-
-            if (editingIndex !== -1) {
-                users[editingIndex] = newUser; 
-            } else {
-                users.push(newUser);
-            }
+            if (editingIndex !== -1) users[editingIndex] = newUser; else users.push(newUser);
             dataToSave = users;
         }
 
-        // Simpan ke Firebase
+        // 2. KIRIM DATA
         await db.ref(currentPath).set(dataToSave);
         
-        showToast("Data Berhasil Diperbarui!");
+        showToast("Data Berhasil Disimpan!");
         clearForm();
     } catch (e) {
-        console.error("Error Detail:", e);
-        if (e.message.includes("permission_denied")) {
-            showToast("Akses Ditolak! Sesi mungkin kadaluarsa.", "error");
+        console.error(e);
+        if (e.code === 'auth/network-request-failed') {
+            showToast("Koneksi Internet Bermasalah!", "error");
         } else {
             showToast("Gagal: " + e.message, "error");
         }
     }
 }
+
 
 
         async function saveGlobalConfig() {
