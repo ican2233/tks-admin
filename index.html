@@ -273,22 +273,28 @@
             Object.entries(usersObj).forEach(([key, u]) => {
                 if(!u) return;
                 
-                // Ambil data dengan fallback (cadangan) jika nama field beda-beda
-                const dUser = u.username || u.Username || u.user || "No Name";
+                // 1. AMBIL DATA (Sama dengan logika tampilan)
+                const dUser = u.username || u.Username || u.user || "";
                 const dPass = u.password || u.key || u.Pass || u.password || "-";
-                const dID = u.id || u.ID || "-";
+                const dID = u.id || u.ID || key;
                 const dExp = u.Expiry || u.expiresAt || "-";
 
-                const searchStr = `${dUser} ${dID}`.toLowerCase();
+                // 2. LOGIKA SEARCH (Cari di semua field: Username, Password, dan ID)
+                const searchStr = `${dUser} ${dPass} ${dID}`.toLowerCase();
                 if (searchVal && !searchStr.includes(searchVal)) return;
                 
                 count++;
+
+                // 3. LOGIKA TAMPILAN NAMA (Supaya tidak "NO NAME")
+                // Jika username kosong, tampilkan ID sebagai judul utama
+                const displayTitle = dUser || dID;
+
                 list.innerHTML += `
                     <div class="glass-card p-5 rounded-[2.5rem] mb-4 border-l-4 border-blue-500 shadow-xl">
                         <div class="flex justify-between items-start mb-3">
                             <div class="truncate pr-2">
-                                <p class="text-[8px] text-blue-400 font-black uppercase tracking-widest mb-1">Username</p>
-                                <h4 class="font-black text-white italic uppercase text-sm truncate">${dUser}</h4>
+                                <p class="text-[8px] text-blue-400 font-black uppercase tracking-widest mb-1">Username / Client</p>
+                                <h4 class="font-black text-white italic uppercase text-sm truncate">${displayTitle}</h4>
                             </div>
                             <div class="flex gap-2">
                                 <button onclick="editUser('${key}')" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl transition-all active:scale-90"><i class="fa-solid fa-pen text-xs"></i></button>
@@ -298,7 +304,7 @@
                         
                         <div class="grid grid-cols-2 gap-3 bg-black/40 p-4 rounded-2xl border border-white/5">
                             <div>
-                                <p class="text-[8px] text-emerald-400 font-black uppercase mb-1">Password</p>
+                                <p class="text-[8px] text-emerald-400 font-black uppercase mb-1">Password / Key</p>
                                 <p class="text-white font-bold text-[11px] tracking-wider">${dPass}</p>
                             </div>
                             <div class="text-right border-l border-white/10 pl-2">
