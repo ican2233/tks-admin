@@ -3,111 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TKS TEAM | Ultra Admin Panel</title>
+    <title>TKS TEAM Smart Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0b0f1a; color: #e2e8f0; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
         .glass-card { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .input-style { width: 100%; padding: 14px; background: rgba(0, 0, 0, 0.3); border: 1px solid #334155; border-radius: 16px; font-size: 14px; outline: none; transition: 0.2s; color: white; }
-        .input-style:focus { border-color: #3b82f6; }
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
-        .toast { background: #1e293b; border-left: 4px solid #3b82f6; color: white; padding: 15px 25px; border-radius: 15px; margin-bottom: 10px; font-size: 11px; font-weight: 800; text-transform: uppercase; animation: slideIn 0.3s ease-out; }
+        .toast {
+            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); color: white; padding: 14px 24px;
+            border-radius: 18px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4); margin-bottom: 10px;
+            font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+            display: flex; align-items: center; border-left: 5px solid #10b981;
+            animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.5s forwards;
+        }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
         .hidden { display: none !important; }
     </style>
 </head>
-<body class="min-h-screen pb-10">
+<body class="bg-[#0b0f1a] min-h-screen pb-20 font-sans text-slate-200">
 
     <div id="toast-container"></div>
 
-    <div id="confirmModal" class="hidden fixed inset-0 z-[999] bg-black/90 backdrop-blur-sm flex items-center justify-center px-6">
-        <div class="glass-card p-8 rounded-[2.5rem] w-full max-w-xs text-center border-t-4 border-red-500">
-            <div class="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-triangle-exclamation text-2xl"></i></div>
-            <h3 class="text-white font-extrabold uppercase italic">Konfirmasi</h3>
-            <p class="text-slate-400 text-[11px] mt-2 mb-6">Hapus data ini secara permanen?</p>
+    <div id="confirmModal" class="hidden fixed inset-0 z-[110] bg-black/80 backdrop-blur-md flex items-center justify-center px-6">
+        <div class="glass-card p-8 rounded-[2.5rem] w-full max-w-xs border-t-4 border-red-500 shadow-2xl text-center">
+            <div class="w-16 h-16 bg-red-500/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-trash-can text-2xl"></i>
+            </div>
+            <h3 class="text-white font-black uppercase italic mb-2">Hapus Data?</h3>
+            <p class="text-slate-400 text-[10px] mb-8 leading-tight">Data akan dihapus permanen dari sistem.</p>
             <div class="flex gap-3">
-                <button onclick="closeConfirm()" class="flex-1 bg-slate-800 p-4 rounded-xl font-bold text-[10px] uppercase">Batal</button>
-                <button id="finalDeleteBtn" class="flex-1 bg-red-600 p-4 rounded-xl font-bold text-[10px] uppercase">Hapus</button>
+                <button onclick="closeConfirm()" class="flex-1 bg-slate-800 p-4 rounded-2xl font-black text-[10px] uppercase">Batal</button>
+                <button id="finalDeleteBtn" class="flex-1 bg-red-600 p-4 rounded-2xl font-black text-[10px] uppercase">Hapus</button>
             </div>
         </div>
     </div>
 
-    <div id="mainContent">
-        <header class="bg-gradient-to-br from-blue-700 to-indigo-900 p-10 rounded-b-[3.5rem] shadow-2xl relative border-b border-white/10">
-            <div class="text-center">
-                <h1 class="text-3xl font-black italic uppercase tracking-tighter text-white">TKS TEAM ADMIN</h1>
-                <p id="roleDisplay" class="text-[9px] font-bold text-blue-200/60 mt-2 tracking-widest uppercase">suwandiikhsan1@gmail.com (SUPER ADMIN)</p>
+    <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#0b0f1a] flex items-center justify-center px-4">
+        <div class="glass-card p-8 rounded-[2.5rem] w-full max-w-sm border-t-4 border-blue-500 shadow-2xl">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <i class="fa-solid fa-user-shield text-2xl text-white"></i>
+                </div>
+                <h2 class="text-xl font-black italic uppercase tracking-tighter">Admin Access</h2>
             </div>
-        </header>
+            <div class="space-y-4">
+                <input type="email" id="loginEmail" placeholder="Email Admin" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none focus:border-blue-500">
+                <input type="password" id="loginPass" placeholder="Password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none focus:border-blue-500">
+                <button onclick="checkAdminLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-xs uppercase transition shadow-lg">Login System</button>
+            </div>
+        </div>
+    </div>
 
-        <main class="max-w-md mx-auto px-6 -mt-8">
-            <div class="flex p-2 bg-slate-900/50 backdrop-blur rounded-2xl mb-6 border border-white/5">
-                <button class="flex-1 py-3 rounded-xl bg-blue-600 text-[10px] font-black uppercase italic shadow-lg">User Management</button>
-                <button class="flex-1 py-3 rounded-xl text-slate-400 text-[10px] font-black uppercase italic">Admin Settings</button>
+    <div id="mainContent" class="hidden">
+        <div class="bg-gradient-to-r from-blue-700 to-indigo-900 p-8 shadow-2xl mb-6 rounded-b-[3rem] border-b border-white/10 text-center relative">
+            <button onclick="doLogout()" class="absolute right-6 top-6 text-white/50 hover:text-white transition">
+                <i class="fa-solid fa-power-off"></i>
+            </button>
+            <h1 class="text-2xl font-black tracking-tighter italic text-white uppercase">TKS TEAM Admin</h1>
+        </div>
+
+        <div class="max-w-md mx-auto px-4">
+            
+            <div id="adminTabNav" class="hidden flex gap-2 mb-6 text-center">
+                <button onclick="switchTab('users')" id="tab-users" class="flex-1 p-3 rounded-2xl bg-blue-600 text-[10px] font-black uppercase italic shadow-lg">Users</button>
+                <button onclick="switchTab('admins')" id="tab-admins" class="flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic">Admins</button>
+                <button onclick="switchTab('system')" id="tab-system" class="flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic text-amber-400">Database</button>
             </div>
 
-            <section id="usersTab">
-                <div class="glass-card p-6 rounded-[2rem] mb-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="w-3/5">
-                            <label class="text-[8px] font-black uppercase text-blue-400 tracking-widest block mb-2">Database Mode</label>
-                            <select id="dbMode" onchange="switchDB()" class="w-full bg-slate-800 text-xs font-bold p-3 rounded-xl border border-slate-700 outline-none text-white">
-                                <option value="lock1">LOCK PASSWORD</option>
-                                <option value="lock2" selected>LOCK USER & PASS</option>
-                                <option value="autologin">AUTO LOGIN</option>
+            <div id="usersTab">
+                <div class="glass-card p-6 rounded-3xl mb-4 shadow-xl">
+                    <div class="flex justify-between items-end mb-4">
+                        <div class="w-2/3">
+                            <label class="text-[9px] text-blue-400 font-black uppercase tracking-widest ml-2 mb-2 block">Mode Database</label>
+                            <select id="lockSelector" onchange="switchDatabase()" class="w-full bg-slate-800 p-3 rounded-xl font-bold text-xs border border-slate-600 text-white outline-none">
+                                <option value="lock1">Lock Password</option>
+                                <option value="lock2" selected>Lock Pass & Username</option>
+                                <option value="autologin">Lock Auto Login</option>
                             </select>
                         </div>
-                        <div class="text-right flex items-center gap-3">
-                            <div class="flex gap-1">
-                                <button onclick="backupData()" title="Backup" class="w-8 h-8 bg-blue-500/20 text-blue-400 rounded-lg flex items-center justify-center"><i class="fa-solid fa-cloud-arrow-down text-[10px]"></i></button>
-                                <button onclick="document.getElementById('fileRestore').click()" title="Restore" class="w-8 h-8 bg-emerald-500/20 text-emerald-400 rounded-lg flex items-center justify-center"><i class="fa-solid fa-cloud-arrow-up text-[10px]"></i></button>
-                                <input type="file" id="fileRestore" class="hidden" accept=".json" onchange="restoreData(this)">
-                            </div>
-                            <div>
-                                <span class="text-[8px] font-black text-slate-500 uppercase block text-right">Total</span>
-                                <span id="userCount" class="text-4xl font-black text-white italic leading-none">0</span>
-                            </div>
+                        <div class="text-right">
+                            <p id="totalUserCounter" class="text-3xl font-black text-white italic leading-none">0</p>
                         </div>
                     </div>
-                    <div class="relative">
-                        <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                        <input type="text" id="userSearch" onkeyup="renderUserList()" placeholder="Cari nama atau ID..." class="w-full p-3 pl-10 bg-black/40 border border-slate-700 rounded-xl text-xs outline-none text-white">
+                    <div class="relative mt-2">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                        <input type="text" id="searchInput" onkeyup="filterUserList()" placeholder="Search" class="w-full p-3 pl-10 bg-black/30 border border-slate-700 rounded-xl text-xs outline-none focus:border-blue-500 transition">
                     </div>
                 </div>
 
-                <div id="userForm" class="glass-card p-6 rounded-[2rem] mb-8 border-l-4 border-emerald-500">
-                    <h3 id="formTitle" class="text-emerald-400 font-black text-[10px] uppercase tracking-widest mb-6 flex items-center"><i class="fa-solid fa-user-plus mr-2"></i> Tambah User Baru</h3>
+                <div id="configArea" class="hidden glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-blue-500">
+                    <h2 class="text-blue-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
+                        <i class="fa-solid fa-gear mr-2"></i> Config Global
+                    </h2>
                     <div class="space-y-4">
-                        <input type="text" id="in_id" placeholder="ID Device" class="input-style">
-                        <div id="wrap_user"><input type="text" id="in_user" placeholder="Username" class="input-style"></div>
-                        <div id="wrap_pass"><input type="text" id="in_pass" placeholder="Password / Key" class="input-style"></div>
-                        <input type="date" id="in_exp" class="input-style">
-                        <div id="wrap_offline">
-                            <select id="in_offline" class="input-style">
-                                <option value="true">ALLOW OFFLINE: TRUE</option>
-                                <option value="false">ALLOW OFFLINE: FALSE</option>
+                        <input type="text" id="cfg_adminUrl" placeholder="Admin Telegram URL..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
+                        <textarea id="cfg_marquee" placeholder="Marquee / Running Text..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none h-16"></textarea>
+                        <button onclick="saveGlobalConfig()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition">Simpan Config Global</button>
+                    </div>
+                </div>
+
+                <div id="userEditorArea" class="glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-emerald-500">
+                    <h2 id="formTitle" class="text-emerald-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
+                        <i class="fa-solid fa-user-plus mr-2"></i> Tambah User
+                    </h2>
+                    <div class="space-y-4">
+                        <input type="text" id="field_id" placeholder="ID Device" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
+                        <div id="usernameContainer"><input type="text" id="field_username" placeholder="Username" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none"></div>
+                        <div id="passwordContainer"><input type="text" id="field_password" placeholder="Key / Password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none"></div>
+                        <input type="date" id="field_expiry" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
+                        <div id="offlineContainer" class="bg-black/40 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Allow Offline</span>
+                            <select id="field_offline" class="bg-blue-600 text-white font-bold text-[10px] px-3 py-1 rounded-lg outline-none cursor-pointer">
+                                <option value="true">TRUE</option>
+                                <option value="false">FALSE</option>
                             </select>
                         </div>
                     </div>
                     <div class="flex gap-2 mt-8">
-                        <button id="btn-cancel" onclick="resetForm()" class="hidden flex-1 bg-slate-700 p-4 rounded-xl font-bold text-[10px] uppercase">Batal</button>
-                        <button id="btn-submit" onclick="submitUser()" class="flex-[2] bg-emerald-600 p-4 rounded-xl font-bold text-[10px] uppercase shadow-lg">Simpan User</button>
+                        <button id="cancelBtn" onclick="clearForm()" class="hidden flex-1 bg-slate-700 p-5 rounded-2xl font-black text-xs uppercase transition">Batal</button>
+                        <button id="submitBtn" onclick="saveUser()" class="flex-[2] bg-emerald-600 p-5 rounded-2xl font-black text-xs uppercase transition">Simpan User</button>
                     </div>
                 </div>
 
-                <div id="userList" class="space-y-4"></div>
-            </section>
-        </main>
+                <div id="userList" class="space-y-4 mt-6"></div>
+            </div>
+
+            <div id="adminsTab" class="hidden">
+                <div class="glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-amber-500">
+                    <h2 class="text-amber-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
+                        <i class="fa-solid fa-crown mr-2"></i> Owner Control
+                    </h2>
+                    <div class="space-y-4">
+                        <input type="email" id="newAdminEmail" placeholder="Email Admin..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
+                        <input type="text" id="newAdminPass" placeholder="Password Admin..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
+                        <button onclick="saveAdmin()" class="w-full bg-amber-600 hover:bg-amber-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition">Update/Tambah Admin</button>
+                    </div>
+                </div>
+                <div id="adminList" class="space-y-4"></div>
+            </div>
+
+            <div id="systemTab" class="hidden">
+                <div class="glass-card p-6 rounded-[2.5rem] shadow-2xl border-l-8 border-indigo-500">
+                    <h2 class="text-indigo-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
+                        <i class="fa-solid fa-database mr-2"></i> Maintenance
+                    </h2>
+                    <div class="space-y-4">
+                        <button onclick="backupDatabase()" class="w-full bg-indigo-600 p-5 rounded-2xl font-black text-[10px] uppercase italic flex items-center justify-center gap-3">
+                            <i class="fa-solid fa-download"></i> Download Backup (JSON)
+                        </button>
+                        
+                        <div class="relative">
+                            <input type="file" id="restoreFile" onchange="restoreDatabase(this)" class="hidden" accept=".json">
+                            <label for="restoreFile" class="w-full bg-slate-700 p-5 rounded-2xl font-black text-[10px] uppercase italic flex items-center justify-center gap-3 cursor-pointer">
+                                <i class="fa-solid fa-upload"></i> Restore From File
+                            </label>
+                        </div>
+                        <p class="text-[8px] text-slate-500 text-center uppercase tracking-widest italic">Hati-hati: Restore akan menimpa data mode yang sedang aktif!</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
 
     <script>
+        // CONFIGURASI FIREBASE SESUAI PERMINTAAN
         const firebaseConfig = {
             apiKey: "AIzaSyDYmuh79olonBM6WH9Uqmv1k46rAgMIzqU",
             authDomain: "admin-panel-tks.firebaseapp.com",
@@ -115,173 +179,293 @@
             projectId: "admin-panel-tks",
             storageBucket: "admin-panel-tks.firebasestorage.app",
             messagingSenderId: "543562286942",
-            appId: "1:543562286942:web:8ba8d50b09610c9d1331cf"
+            appId: "1:543562286942:web:8ba8d50b09610c9d1331cf",
+            measurementId: "G-QZ8YWVRHGZ"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let currentMode = "lock2";
-        let cachedData = null;
-        let editIdx = -1;
+        const SUPER_ADMIN_EMAIL = "suwandiikhsan1@gmail.com"; 
+        let loggedInEmail = localStorage.getItem('tks_admin_email');
+        let currentPath = "lock2";
+        let rawData = null;
+        let editingIndex = -1;
+        let deleteIndexTarget = -1;
 
-        // PENTING: Fungsi ngebaca database secara cerdas
-        function switchDB() {
-            currentMode = document.getElementById('dbMode').value;
-            const isAuto = currentMode === 'autologin';
-            const isLock1 = currentMode === 'lock1';
+        window.onload = () => { 
+            if (localStorage.getItem('tks_admin_session') === 'active') showPanel(); 
+        };
 
-            document.getElementById('wrap_user').classList.toggle('hidden', isAuto || isLock1);
-            document.getElementById('wrap_pass').classList.toggle('hidden', isAuto);
-            document.getElementById('wrap_offline').classList.toggle('hidden', isAuto);
+        async function checkAdminLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            const snapshot = await db.ref('AdminAccount').once('value');
+            const data = snapshot.val();
+            let admins = Array.isArray(data) ? data : (data ? Object.values(data) : []);
+            const found = admins.find(a => a && a.email === email && a.pass === pass);
+
+            if (found) {
+                localStorage.setItem('tks_admin_session', 'active');
+                localStorage.setItem('tks_admin_email', email);
+                loggedInEmail = email;
+                showPanel();
+            } else { 
+                showToast("Email/Password Salah!", "error"); 
+            }
+        }
+
+        function showPanel() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            if (loggedInEmail === SUPER_ADMIN_EMAIL) {
+                document.getElementById('adminTabNav').classList.remove('hidden');
+                loadAdminList();
+            }
+            switchDatabase();
+        }
+
+        function doLogout() { localStorage.clear(); location.reload(); }
+
+        function switchTab(tab) {
+            document.getElementById('usersTab').classList.toggle('hidden', tab !== 'users');
+            document.getElementById('adminsTab').classList.toggle('hidden', tab !== 'admins');
+            document.getElementById('systemTab').classList.toggle('hidden', tab !== 'system');
             
-            resetForm();
+            document.getElementById('tab-users').className = tab === 'users' ? 'flex-1 p-3 rounded-2xl bg-blue-600 text-[10px] font-black uppercase italic shadow-lg' : 'flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic';
+            document.getElementById('tab-admins').className = tab === 'admins' ? 'flex-1 p-3 rounded-2xl bg-amber-600 text-[10px] font-black uppercase italic shadow-lg' : 'flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic';
+            document.getElementById('tab-system').className = tab === 'system' ? 'flex-1 p-3 rounded-2xl bg-indigo-600 text-[10px] font-black uppercase italic shadow-lg' : 'flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic';
+        }
+
+        function switchDatabase() {
+            currentPath = document.getElementById('lockSelector').value;
+            const isAuto = currentPath === "autologin";
+            const isLock1 = currentPath === "lock1";
             
-            // Listener Realtime
-            db.ref(currentMode).on('value', (snap) => { 
-                cachedData = snap.val(); 
-                renderUserList(); 
+            document.getElementById('usernameContainer').classList.toggle('hidden', isAuto || isLock1);
+            document.getElementById('passwordContainer').classList.toggle('hidden', isAuto);
+            document.getElementById('offlineContainer').classList.toggle('hidden', isAuto);
+            document.getElementById('configArea').classList.toggle('hidden', !isAuto);
+            
+            document.getElementById('searchInput').value = ''; 
+            clearForm();
+            loadFirebaseData();
+        }
+
+        function loadFirebaseData() {
+            db.ref(currentPath).on('value', (snapshot) => {
+                rawData = snapshot.val();
+                if (currentPath === "autologin" && rawData) {
+                    document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
+                    document.getElementById('cfg_marquee').value = rawData.Marquee || "";
+                }
+                renderUsers();
             });
         }
 
-        function renderUserList() {
-            const container = document.getElementById('userList');
-            const search = document.getElementById('userSearch').value.toLowerCase();
-            container.innerHTML = "";
+        function renderUsers() {
+            const list = document.getElementById('userList');
+            const searchVal = document.getElementById('searchInput').value.toLowerCase();
+            let usersArray = (currentPath === "autologin") ? (rawData?.Users || []) : (Array.isArray(rawData) ? rawData : (rawData ? Object.values(rawData) : []));
             
-            let items = [];
-            
-            // Konversi data Firebase (Object/Array) ke list murni
-            if (currentMode === 'autologin') {
-                items = cachedData?.Users || [];
-            } else if (cachedData) {
-                items = Array.isArray(cachedData) ? cachedData : Object.values(cachedData);
-            }
-
-            // Bersihkan dari data null
-            items = items.filter(u => u !== null);
-
+            list.innerHTML = '';
             let count = 0;
 
-            items.forEach((u, i) => {
-                let displayTitle = "";
-                let displaySub = "";
+            usersArray.forEach((u, index) => {
+                if(!u) return;
+                const searchStr = `${u.username || ''} ${u.id || u.ID || ''} ${u.key || u.password || ''}`.toLowerCase();
+                if (searchVal && !searchStr.includes(searchVal)) return;
 
-                // Logika ngebaca field berdasarkan mode database
-                if (currentMode === "lock2") {
-                    displayTitle = u.username || "No Name";
-                    displaySub = `ID: ${u.id || 'N/A'}`;
-                } else if (currentMode === "lock1") {
-                    displayTitle = u.id || "Unknown ID";
-                    displaySub = `Key: ${u.password || u.key || 'N/A'}`;
-                } else if (currentMode === "autologin") {
-                    displayTitle = u.ID || "Auto Device";
-                    displaySub = `Exp: ${u.Expiry || 'N/A'}`;
-                }
-
-                // Filter search
-                if (search && !displayTitle.toLowerCase().includes(search) && !displaySub.toLowerCase().includes(search)) return;
-                
                 count++;
-                container.innerHTML += `
-                    <div class="glass-card p-5 rounded-3xl relative border-l-4 border-slate-600">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <h4 class="text-white font-extrabold italic uppercase text-sm">${displayTitle}</h4>
-                                <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">${displaySub}</p>
-                            </div>
+                const isAuto = currentPath === "autologin";
+                const displayTitle = (!isAuto && u.username) ? u.username : (u.id || u.ID);
+                const isOffline = (u.allowOffline === true || u.allowOffline === "true");
+
+                list.innerHTML += `
+                    <div class="glass-card p-5 rounded-[2.5rem] mb-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="font-black text-white italic uppercase text-sm truncate pr-4">${displayTitle}</div>
                             <div class="flex gap-2">
-                                <button onclick="editUser(${i})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
-                                <button onclick="triggerDelete(${i})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button>
+                                <button onclick="editUser(${index})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl"><i class="fa-solid fa-pen text-xs"></i></button>
+                                <button onclick="deleteUser(${index})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl"><i class="fa-solid fa-trash text-xs"></i></button>
                             </div>
+                        </div>
+                        <div class="bg-black/40 p-4 rounded-2xl text-[10px] space-y-1">
+                            <div class="flex justify-between"><span class="opacity-40 uppercase">ID</span><span class="text-blue-300 font-bold">${u.id || u.ID}</span></div>
+                            ${u.username ? `<div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40 uppercase">User</span><span>${u.username}</span></div>` : ''}
+                            ${!isAuto ? `<div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40 uppercase">Key</span><span class="text-indigo-400 font-bold">${u.key || u.password || "-"}</span></div>` : ''}
+                            <div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40 uppercase">Exp</span><span class="text-amber-400 font-bold">${u.Expiry || u.expiresAt || "-"}</span></div>
+                            ${!isAuto ? `<div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40 uppercase">Offline</span><span class="${isOffline?'text-emerald-400':'text-red-400'} font-bold">${isOffline?'YES':'NO'}</span></div>` : ''}
                         </div>
                     </div>`;
             });
-            
-            // Update total angka di layar
-            document.getElementById('userCount').innerText = count;
+            document.getElementById('totalUserCounter').innerText = count;
         }
 
-        async function submitUser() {
-            const id = document.getElementById('in_id').value.trim();
-            const exp = document.getElementById('in_exp').value;
-            if (!id || !exp) return showToast("Lengkapi form!", "error");
+        async function saveUser() {
+            const devId = document.getElementById('field_id').value;
+            const expVal = document.getElementById('field_expiry').value;
+            if(!devId || !expVal) return showToast("Wajib Isi ID & Exp!", "error");
 
-            let toSave;
-            if (currentMode === 'autologin') {
-                let base = cachedData || { Users: [] };
-                if (!base.Users) base.Users = [];
-                const obj = { ID: id, Expiry: dmy(exp) };
-                if (editIdx > -1) base.Users[editIdx] = obj; else base.Users.push(obj);
-                toSave = base;
+            let dataToSave;
+            if (currentPath === "autologin") {
+                let data = rawData || { Users: [] };
+                if(!data.Users) data.Users = [];
+                const newUser = { ID: devId, Expiry: formatDateToDMY(expVal) };
+                if (editingIndex !== -1) data.Users[editingIndex] = newUser; else data.Users.push(newUser);
+                dataToSave = data;
             } else {
-                let list = Array.isArray(cachedData) ? [...cachedData] : (cachedData ? Object.values(cachedData) : []);
-                const obj = { 
-                    id: id, 
-                    expiresAt: exp, 
-                    key: document.getElementById('in_pass').value, 
-                    password: document.getElementById('in_pass').value, 
-                    allowOffline: document.getElementById('in_offline').value === "true" 
+                let users = Array.isArray(rawData) ? [...rawData] : (rawData ? Object.values(rawData) : []);
+                const newUser = { 
+                    id: devId, 
+                    key: document.getElementById('field_password').value, 
+                    password: document.getElementById('field_password').value, 
+                    expiresAt: expVal, 
+                    allowOffline: document.getElementById('field_offline').value === 'true'
                 };
-                if (currentMode === 'lock2') obj.username = document.getElementById('in_user').value || "User";
-                if (editIdx > -1) list[editIdx] = obj; else list.push(obj);
-                toSave = list;
+                if(currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
+                if (editingIndex !== -1) users[editingIndex] = newUser; else users.push(newUser);
+                dataToSave = users;
             }
-            await db.ref(currentMode).set(toSave);
-            showToast("Success"); resetForm();
+            await db.ref(currentPath).set(dataToSave);
+            showToast("Berhasil Disimpan!"); clearForm();
         }
 
-        function editUser(i) {
-            let items = (currentMode === 'autologin') ? cachedData.Users : (Array.isArray(cachedData) ? cachedData : Object.values(cachedData));
-            items = items.filter(u => u !== null);
-            const u = items[i]; editIdx = i;
+        async function saveGlobalConfig() {
+            let data = rawData || { Users: [] }; 
+            data.AdminUrl = document.getElementById('cfg_adminUrl').value;
+            data.Marquee = document.getElementById('cfg_marquee').value;
+            await db.ref(currentPath).set(data);
+            showToast("Config Global Diupdate");
+        }
+
+        function editUser(index) {
+            let usersArr = (currentPath === "autologin") ? rawData.Users : (Array.isArray(rawData) ? rawData : Object.values(rawData));
+            const u = usersArr[index];
+            editingIndex = index;
             document.getElementById('formTitle').innerText = "Update User";
-            document.getElementById('btn-cancel').classList.remove('hidden');
-            document.getElementById('in_id').value = u.id || u.ID;
-            document.getElementById('in_user').value = u.username || "";
-            document.getElementById('in_pass').value = u.key || u.password || "";
-            document.getElementById('in_offline').value = String(u.allowOffline);
-            document.getElementById('in_exp').value = (currentMode === 'autologin') ? ymd(u.Expiry) : u.expiresAt;
+            document.getElementById('cancelBtn').classList.remove('hidden');
+            document.getElementById('field_id').value = u.id || u.ID;
+            document.getElementById('field_username').value = u.username || '';
+            document.getElementById('field_password').value = u.key || u.password || '';
+            document.getElementById('field_offline').value = String(u.allowOffline || 'false');
+            document.getElementById('field_expiry').value = currentPath === "autologin" ? formatDateToYMD(u.Expiry) : u.expiresAt;
+            window.scrollTo({top: 150, behavior: 'smooth'});
         }
 
-        function triggerDelete(i) {
+        function deleteUser(index) {
+            deleteIndexTarget = index;
             document.getElementById('confirmModal').classList.remove('hidden');
-            document.getElementById('finalDeleteBtn').onclick = async () => {
-                let items = (currentMode === 'autologin') ? [...cachedData.Users] : (Array.isArray(cachedData) ? [...cachedData] : Object.values(cachedData));
-                items = items.filter(u => u !== null);
-                items.splice(i, 1);
-                await db.ref(currentMode).set((currentMode === 'autologin') ? { ...cachedData, Users: items } : items);
-                closeConfirm(); showToast("Terhapus", "error");
-            };
+            document.getElementById('finalDeleteBtn').onclick = executeDelete;
         }
 
-        function backupData() {
-            if (!cachedData) return showToast("Data Kosong", "error");
-            const blob = new Blob([JSON.stringify(cachedData, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `Backup_${currentMode}.json`; a.click();
+        async function executeDelete() {
+            if (currentPath === "autologin") {
+                let usersArray = [...rawData.Users];
+                usersArray.splice(deleteIndexTarget, 1);
+                await db.ref(currentPath + '/Users').set(usersArray);
+            } else {
+                let usersArray = Array.isArray(rawData) ? [...rawData] : Object.values(rawData);
+                usersArray.splice(deleteIndexTarget, 1);
+                await db.ref(currentPath).set(usersArray);
+            }
+            closeConfirm();
+            showToast("User Dihapus", "error");
         }
 
-        function restoreData(input) {
-            const file = input.files[0]; if (!file) return;
+        // --- BACKUP & RESTORE LOGIC ---
+        function backupDatabase() {
+            if(!rawData) return showToast("Tidak ada data untuk backup", "error");
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(rawData, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", `backup_${currentPath}_${new Date().toLocaleDateString()}.json`);
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            showToast("Backup Siap!");
+        }
+
+        function restoreDatabase(input) {
+            const file = input.files[0];
+            if (!file) return;
             const reader = new FileReader();
             reader.onload = async (e) => {
                 try {
                     const json = JSON.parse(e.target.result);
-                    await db.ref(currentMode).set(json);
-                    showToast("Restore Berhasil");
-                } catch (err) { showToast("File Rusak", "error"); }
+                    if (confirm("Apakah anda yakin ingin me-restore data? Data lama di mode ini akan hilang!")) {
+                        await db.ref(currentPath).set(json);
+                        showToast("Restore Berhasil!");
+                        input.value = ""; // reset input
+                    }
+                } catch (err) {
+                    showToast("File JSON tidak valid!", "error");
+                }
             };
             reader.readAsText(file);
         }
 
-        function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
-        function showToast(m, t='success') { const c = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${t==='error'?'border-red-500':'border-blue-500'}`; toast.innerHTML = m; c.appendChild(toast); setTimeout(() => toast.remove(), 2500); }
-        function resetForm() { editIdx = -1; document.getElementById('formTitle').innerText = "Tambah User Baru"; document.getElementById('btn-cancel').classList.add('hidden'); ['in_id','in_user','in_pass','in_exp'].forEach(id => document.getElementById(id).value = ""); }
-        function dmy(s) { if(!s || !s.includes('-')) return s; const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; }
-        function ymd(s) { if(!s || !s.includes('/')) return s; const [d,m,y] = s.split('/'); return `${y}-${m}-${d}`; }
+        // --- ADMIN LIST LOGIC ---
+        function loadAdminList() {
+            db.ref('AdminAccount').on('value', (snapshot) => {
+                const data = snapshot.val();
+                const list = document.getElementById('adminList');
+                list.innerHTML = '';
+                let admins = Array.isArray(data) ? data : (data ? Object.values(data) : []);
+                admins.forEach((admin, index) => {
+                    if(!admin) return;
+                    const isSuper = admin.email === SUPER_ADMIN_EMAIL;
+                    list.innerHTML += `<div class="glass-card p-4 rounded-2xl flex justify-between items-center border ${isSuper ? 'border-amber-500/30' : 'border-white/5'}">
+                        <div><p class="text-[10px] font-black text-white uppercase italic">${admin.email} ${isSuper ? '⭐' : ''}</p><p class="text-[9px] text-slate-500">Pass: ${admin.pass}</p></div>
+                        ${!isSuper ? `<button onclick="confirmDeleteAdmin(${index})" class="w-8 h-8 bg-red-500/10 text-red-400 rounded-lg"><i class="fa-solid fa-user-minus text-xs"></i></button>` : ''}
+                    </div>`;
+                });
+            });
+        }
 
-        switchDB();
+        async function saveAdmin() {
+            if (loggedInEmail !== SUPER_ADMIN_EMAIL) return;
+            const email = document.getElementById('newAdminEmail').value;
+            const pass = document.getElementById('newAdminPass').value;
+            if(!email || !pass) return showToast("Isi Email & Pass!", "error");
+            const snapshot = await db.ref('AdminAccount').once('value');
+            let admins = Array.isArray(snapshot.val()) ? snapshot.val() : Object.values(snapshot.val() || {});
+            const idx = admins.findIndex(a => a.email === email);
+            if(idx > -1) admins[idx].pass = pass; else admins.push({ email, pass });
+            await db.ref('AdminAccount').set(admins);
+            showToast("Admin Diperbarui");
+            document.getElementById('newAdminEmail').value = ''; document.getElementById('newAdminPass').value = '';
+        }
+
+        function confirmDeleteAdmin(index) {
+            deleteIndexTarget = index;
+            document.getElementById('confirmModal').classList.remove('hidden');
+            document.getElementById('finalDeleteBtn').onclick = async () => {
+                const snapshot = await db.ref('AdminAccount').once('value');
+                let admins = Array.isArray(snapshot.val()) ? [...snapshot.val()] : Object.values(snapshot.val());
+                admins.splice(deleteIndexTarget, 1);
+                await db.ref('AdminAccount').set(admins);
+                closeConfirm();
+                showToast("Admin Dihapus", "error");
+            };
+        }
+
+        function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
+        function filterUserList() { renderUsers(); }
+        function clearForm() {
+            editingIndex = -1; document.getElementById('formTitle').innerText = "Tambah User";
+            document.getElementById('cancelBtn').classList.add('hidden');
+            document.getElementById('field_id').value = ''; document.getElementById('field_username').value = '';
+            document.getElementById('field_password').value = ''; document.getElementById('field_expiry').value = '';
+        }
+        function showToast(m, t='success') {
+            const c = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${t==='error'?'border-red-500':'border-emerald-500'}`;
+            toast.innerHTML = m; c.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+        function formatDateToDMY(d) { if(!d || !d.includes('-')) return d; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+        function formatDateToYMD(d) { if(!d || !d.includes('/')) return d; const [day,m,y]=d.split('/'); return `${y}-${m}-${day}`; }
     </script>
 </body>
 </html>
