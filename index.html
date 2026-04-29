@@ -27,6 +27,8 @@
         .hidden { display: none !important; }
         .btn-action { transition: all 0.2s ease; }
         .btn-action:active { transform: scale(0.95); }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-[#0b0f1a] min-h-screen pb-20 font-sans text-slate-200">
@@ -39,7 +41,7 @@
                 <i class="fa-solid fa-trash-can text-2xl"></i>
             </div>
             <h3 class="text-white font-black uppercase italic mb-2 text-sm">Hapus Data?</h3>
-            <p class="text-slate-400 text-[10px] mb-8 leading-tight">Tindakan ini permanen.</p>
+            <p class="text-slate-400 text-[10px] mb-8 leading-tight">Tindakan ini tidak bisa dibatalkan.</p>
             <div class="flex gap-3">
                 <button onclick="closeConfirm()" class="flex-1 bg-slate-800 p-4 rounded-2xl font-black text-[10px] uppercase">Batal</button>
                 <button id="finalDeleteBtn" class="flex-1 bg-red-600 p-4 rounded-2xl font-black text-[10px] uppercase">Hapus</button>
@@ -98,7 +100,7 @@
                     </div>
                     <div class="relative mt-2">
                         <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                        <input type="text" id="searchInput" onkeyup="filterUserList()" placeholder="Cari ID atau Username..." class="w-full p-3 pl-10 bg-black/30 border border-slate-700 rounded-xl text-xs outline-none focus:border-blue-500 transition">
+                        <input type="text" id="searchInput" onkeyup="renderUsers()" placeholder="Cari apa saja..." class="w-full p-3 pl-10 bg-black/30 border border-slate-700 rounded-xl text-xs outline-none focus:border-blue-500 transition">
                     </div>
                 </div>
 
@@ -181,7 +183,6 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const auth = firebase.auth();
 
         let loggedInEmail = localStorage.getItem('tks_admin_email');
         let currentPath = "lock2";
@@ -212,7 +213,6 @@
                 if (adminValid) {
                     localStorage.setItem('tks_admin_session', 'active');
                     localStorage.setItem('tks_admin_email', email);
-                    localStorage.setItem('tks_admin_token', pass);
                     loggedInEmail = email;
                     showPanel();
                     showToast("Access Granted!");
@@ -237,18 +237,20 @@
         function switchTab(tab) {
             document.getElementById('usersTab').classList.toggle('hidden', tab !== 'users');
             document.getElementById('adminsTab').classList.toggle('hidden', tab !== 'admins');
-            document.getElementById('tab-users').className = tab === 'users' ? 'flex-1 p-3 rounded-2xl bg-blue-600 text-[10px] font-black uppercase italic shadow-lg transition-all' : 'flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic';
-            document.getElementById('tab-admins').className = tab === 'admins' ? 'flex-1 p-3 rounded-2xl bg-amber-600 text-[10px] font-black uppercase italic shadow-lg transition-all' : 'flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic';
+            document.getElementById('tab-users').className = tab === 'users' ? 'flex-1 p-3 rounded-2xl bg-blue-600 text-[10px] font-black uppercase italic shadow-lg' : 'flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic';
+            document.getElementById('tab-admins').className = tab === 'admins' ? 'flex-1 p-3 rounded-2xl bg-amber-600 text-[10px] font-black uppercase italic shadow-lg' : 'flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic';
         }
 
         function switchDatabase() {
             currentPath = document.getElementById('lockSelector').value;
+            // Update visibility form sesuai mode
             document.getElementById('usernameContainer').classList.toggle('hidden', currentPath === "autologin" || currentPath === "lock1");
             document.getElementById('passwordContainer').classList.toggle('hidden', currentPath === "autologin");
             document.getElementById('offlineContainer').classList.toggle('hidden', currentPath === "autologin");
             document.getElementById('configArea').classList.toggle('hidden', currentPath !== "autologin");
+            
             clearForm();
-            db.ref(currentPath).off();
+            db.ref(currentPath).off(); // Reset listener lama
             loadFirebaseData();
         }
 
@@ -263,30 +265,47 @@
             });
         }
 
+        // FUNGSI UTAMA: RENDER OTOMATIS SESUAI FIELD FIREBASE
         function renderUsers() {
             const list = document.getElementById('userList');
             const searchVal = document.getElementById('searchInput').value.toLowerCase();
             list.innerHTML = '';
+            
             const usersObj = (currentPath === 'autologin') ? (cachedData?.Users || {}) : (cachedData || {});
             let count = 0;
 
             Object.entries(usersObj).forEach(([key, u]) => {
-                if(!u) return;
-                const searchStr = `${u.username || ''} ${u.id || u.ID || ''}`.toLowerCase();
-                if (searchVal && !searchStr.includes(searchVal)) return;
+                if(!u || typeof u !== 'object') return;
+
+                // Gabungin semua value buat fitur search
+                const allValues = Object.values(u).join(' ').toLowerCase();
+                if (searchVal && !allValues.includes(searchVal)) return;
+                
                 count++;
+                const cardTitle = u.username || u.Username || u.id || u.ID || key;
+
+                let detailsHtml = '';
+                Object.entries(u).forEach(([fKey, fVal]) => {
+                    if (typeof fVal !== 'object') {
+                        detailsHtml += `
+                            <div class="flex justify-between border-b border-white/5 py-2 last:border-0" onclick="copyText('${fVal}')">
+                                <span class="opacity-40 uppercase text-[9px]">${fKey}</span>
+                                <span class="text-blue-300 font-bold truncate ml-4 text-[10px]">${fVal}</span>
+                            </div>`;
+                    }
+                });
+
                 list.innerHTML += `
                     <div class="glass-card p-5 rounded-[2.5rem] mb-4 border-l-4 border-slate-700">
                         <div class="flex justify-between items-center mb-3">
-                            <div class="font-black text-white italic uppercase text-sm truncate pr-4">${(!currentPath.includes('auto') && u.username) ? u.username : (u.id || u.ID)}</div>
+                            <div class="font-black text-white italic uppercase text-sm truncate pr-4">${cardTitle}</div>
                             <div class="flex gap-2">
                                 <button onclick="editUser('${key}')" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl"><i class="fa-solid fa-pen text-xs"></i></button>
                                 <button onclick="triggerDelete('${key}', 'user')" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl"><i class="fa-solid fa-trash text-xs"></i></button>
                             </div>
                         </div>
-                        <div class="bg-black/40 p-4 rounded-2xl text-[10px] space-y-1">
-                            <div class="flex justify-between"><span class="opacity-40 uppercase">ID</span><span class="text-blue-300 font-bold">${u.id || u.ID}</span></div>
-                            <div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40 uppercase">Exp</span><span class="text-amber-400 font-bold">${u.Expiry || u.expiresAt || "-"}</span></div>
+                        <div class="bg-black/40 p-4 rounded-2xl space-y-0.5">
+                            ${detailsHtml}
                         </div>
                     </div>`;
             });
@@ -297,20 +316,90 @@
             const devId = document.getElementById('field_id').value.trim();
             const expVal = document.getElementById('field_expiry').value;
             if(!devId || !expVal) return showToast("Isi ID & Exp!", "error");
-            const newUser = { id: devId, ID: devId, expiresAt: expVal, Expiry: (currentPath === 'autologin' ? formatDateToDMY(expVal) : expVal), allowOffline: document.getElementById('field_offline').value === 'true' };
-            if (currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
-            if (currentPath !== "autologin") { newUser.key = document.getElementById('field_password').value; newUser.password = newUser.key; }
+
+            // Mapping dinamis buat save
+            let data = { 
+                id: devId, ID: devId, 
+                expiresAt: expVal, 
+                Expiry: (currentPath === 'autologin' ? formatDateToDMY(expVal) : expVal),
+                EXP: expVal
+            };
+
+            if (currentPath === "lock2") data.username = document.getElementById('field_username').value || "User";
+            if (currentPath !== "autologin") {
+                const pass = document.getElementById('field_password').value;
+                data.key = pass; data.password = pass; data.Pass = pass;
+                data.allowOffline = document.getElementById('field_offline').value === 'true';
+            }
+
             const finalKey = editKey || db.ref().push().key;
             const path = (currentPath === 'autologin') ? `autologin/Users/${finalKey}` : `${currentPath}/${finalKey}`;
-            await db.ref(path).set(newUser);
-            showToast("Saved!"); clearForm();
+            
+            await db.ref(path).set(data);
+            showToast("User Tersimpan!"); 
+            clearForm();
         }
 
-        function triggerDelete(key, type) { deleteKeyTarget = key; deleteType = type; document.getElementById('confirmModal').classList.remove('hidden'); document.getElementById('finalDeleteBtn').onclick = executeDelete; }
+        function editUser(key) {
+            const u = (currentPath === 'autologin') ? cachedData.Users[key] : cachedData[key];
+            editKey = key;
+            document.getElementById('formTitle').innerText = "Update User";
+            document.getElementById('cancelBtn').classList.remove('hidden');
+            
+            document.getElementById('field_id').value = u.id || u.ID || '';
+            document.getElementById('field_username').value = u.username || u.Username || '';
+            document.getElementById('field_password').value = u.key || u.password || u.Pass || '';
+            
+            const rawExp = u.expiresAt || u.EXP || u.Expiry || '';
+            document.getElementById('field_expiry').value = rawExp.includes('/') ? formatDateToYMD(rawExp) : rawExp;
+        }
+
+        function triggerDelete(key, type) { 
+            deleteKeyTarget = key; 
+            deleteType = type; 
+            document.getElementById('confirmModal').classList.remove('hidden'); 
+            document.getElementById('finalDeleteBtn').onclick = executeDelete; 
+        }
 
         async function executeDelete() {
             let path = deleteType === 'admin' ? `AdminAccount/${deleteKeyTarget}` : (currentPath === 'autologin' ? `autologin/Users/${deleteKeyTarget}` : `${currentPath}/${deleteKeyTarget}`);
-            await db.ref(path).remove(); closeConfirm(); showToast("Deleted", "error");
+            await db.ref(path).remove(); 
+            closeConfirm(); 
+            showToast("Berhasil Dihapus", "error");
+        }
+
+        // --- Utils & Admin Functions ---
+        function loadAdminList() {
+            db.ref('AdminAccount').on('value', (snap) => {
+                const list = document.getElementById('adminList'); list.innerHTML = '';
+                if(!snap.val()) return;
+                Object.entries(snap.val()).forEach(([key, admin]) => {
+                    const isSuper = admin.email === SUPER_ADMIN_EMAIL;
+                    list.innerHTML += `
+                    <div class="glass-card p-5 rounded-[2rem] flex justify-between items-center border border-white/5 mb-3">
+                        <div><p class="text-[10px] font-black text-white uppercase italic">${admin.email}</p><p class="text-[9px] text-slate-500 font-bold uppercase">Pass: ${admin.pass}</p></div>
+                        <div class="flex gap-2">${!isSuper ? `<button onclick="editAdmin('${key}')" class="w-8 h-8 bg-amber-500/10 text-amber-500 rounded-lg"><i class="fa-solid fa-pen text-[10px]"></i></button><button onclick="triggerDelete('${key}', 'admin')" class="w-8 h-8 bg-red-500/10 text-red-400 rounded-lg"><i class="fa-solid fa-trash text-[10px]"></i></button>` : '⭐'}</div>
+                    </div>`;
+                });
+            });
+        }
+
+        async function saveAdmin() {
+            const email = document.getElementById('newAdminEmail').value;
+            const pass = document.getElementById('newAdminPass').value;
+            if(!email || !pass) return showToast("Isi Email & Pass!", "error");
+            const finalKey = adminEditKey || db.ref().push().key;
+            await db.ref(`AdminAccount/${finalKey}`).set({ email, pass });
+            showToast("Admin Diperbarui"); 
+            clearAdminForm();
+        }
+
+        function editAdmin(key) {
+            db.ref(`AdminAccount/${key}`).once('value', (s) => {
+                const a = s.val(); adminEditKey = key;
+                document.getElementById('newAdminEmail').value = a.email; document.getElementById('newAdminPass').value = a.pass;
+                document.getElementById('adminFormTitle').innerText = "Update Admin"; document.getElementById('cancelAdminBtn').classList.remove('hidden');
+            });
         }
 
         async function backupData() {
@@ -319,8 +408,8 @@
                 const blob = new Blob([JSON.stringify(snap.val(), null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a'); a.href = url; a.download = `TKS_BACKUP_${new Date().getTime()}.json`; a.click();
-                showToast("Backup Success!");
-            } catch(e) { showToast("Backup Failed", "error"); }
+                showToast("Backup Berhasil!");
+            } catch(e) { showToast("Gagal Backup", "error"); }
         }
 
         function restoreData(input) {
@@ -328,56 +417,22 @@
             reader.onload = async (e) => {
                 try {
                     const json = JSON.parse(e.target.result);
-                    if (confirm("Ganti semua data di database dengan file ini?")) {
-                        await db.ref().set(json); showToast("Restore Success!"); location.reload();
+                    if (confirm("Ganti SEMUA data di database dengan file ini?")) {
+                        await db.ref().set(json); showToast("Restore Berhasil!"); location.reload();
                     }
-                } catch(err) { showToast("Invalid File", "error"); }
+                } catch(err) { showToast("File Tidak Valid", "error"); }
             };
             reader.readAsText(input.files[0]);
         }
 
-        // --- Fungsi Pelengkap ---
-        function loadAdminList() {
-            db.ref('AdminAccount').on('value', (snap) => {
-                const list = document.getElementById('adminList'); list.innerHTML = '';
-                if(!snap.val()) return;
-                Object.entries(snap.val()).forEach(([key, admin]) => {
-                    const isSuper = admin.email === SUPER_ADMIN_EMAIL;
-                    list.innerHTML += `<div class="glass-card p-5 rounded-[2rem] flex justify-between items-center border border-white/5 mb-3">
-                        <div><p class="text-[10px] font-black text-white uppercase italic">${admin.email}</p><p class="text-[9px] text-slate-500 font-bold uppercase">Pass: ${admin.pass}</p></div>
-                        <div class="flex gap-2">${!isSuper ? `<button onclick="editAdmin('${key}')" class="w-8 h-8 bg-amber-500/10 text-amber-500 rounded-lg"><i class="fa-solid fa-pen text-[10px]"></i></button><button onclick="triggerDelete('${key}', 'admin')" class="w-8 h-8 bg-red-500/10 text-red-400 rounded-lg"><i class="fa-solid fa-trash text-[10px]"></i></button>` : '⭐'}</div>
-                    </div>`;
-                });
-            });
-        }
-        async function saveAdmin() {
-            const email = document.getElementById('newAdminEmail').value;
-            const pass = document.getElementById('newAdminPass').value;
-            const finalKey = adminEditKey || db.ref().push().key;
-            await db.ref(`AdminAccount/${finalKey}`).set({ email, pass });
-            showToast("Admin Updated"); clearAdminForm();
-        }
-        function editAdmin(key) {
-            db.ref(`AdminAccount/${key}`).once('value', (s) => {
-                const a = s.val(); adminEditKey = key;
-                document.getElementById('newAdminEmail').value = a.email; document.getElementById('newAdminPass').value = a.pass;
-                document.getElementById('adminFormTitle').innerText = "Update Admin"; document.getElementById('cancelAdminBtn').classList.remove('hidden');
-            });
-        }
-        function clearAdminForm() { adminEditKey = null; document.getElementById('adminFormTitle').innerText = "Admin Control"; document.getElementById('newAdminEmail').value = ''; document.getElementById('newAdminPass').value = ''; document.getElementById('cancelAdminBtn').classList.add('hidden'); }
-        async function saveGlobalConfig() { await db.ref('autologin').update({ AdminUrl: document.getElementById('cfg_adminUrl').value, Marquee: document.getElementById('cfg_marquee').value }); showToast("Config Saved"); }
-        function editUser(key) {
-            const u = (currentPath === 'autologin') ? cachedData.Users[key] : cachedData[key];
-            editKey = key; document.getElementById('formTitle').innerText = "Update User"; document.getElementById('cancelBtn').classList.remove('hidden');
-            document.getElementById('field_id').value = u.id || u.ID; document.getElementById('field_username').value = u.username || '';
-            document.getElementById('field_password').value = u.key || u.password || ''; document.getElementById('field_expiry').value = currentPath === "autologin" ? formatDateToYMD(u.Expiry) : u.expiresAt;
-        }
-        function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
-        function clearForm() { editKey = null; document.getElementById('formTitle').innerText = "Tambah User"; document.getElementById('cancelBtn').classList.add('hidden'); ['field_id','field_username','field_password','field_expiry'].forEach(id => document.getElementById(id).value = ''); }
         function showToast(m, t='success') { const c = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = `toast ${t==='error'?'border-red-500':'border-blue-500'}`; toast.innerHTML = m; c.appendChild(toast); setTimeout(() => toast.remove(), 2500); }
-        function formatDateToDMY(d) { if(!d.includes('-')) return d; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
-        function formatDateToYMD(d) { if(!d.includes('/')) return d; const [day,m,y]=d.split('/'); return `${y}-${m}-${day}`; }
-        function filterUserList() { renderUsers(); }
+        function copyText(txt) { navigator.clipboard.writeText(txt); showToast("Copied: " + txt); }
+        function clearForm() { editKey = null; document.getElementById('formTitle').innerText = "Tambah User"; document.getElementById('cancelBtn').classList.add('hidden'); ['field_id','field_username','field_password','field_expiry'].forEach(id => document.getElementById(id).value = ''); }
+        function clearAdminForm() { adminEditKey = null; document.getElementById('adminFormTitle').innerText = "Admin Control"; document.getElementById('newAdminEmail').value = ''; document.getElementById('newAdminPass').value = ''; document.getElementById('cancelAdminBtn').classList.add('hidden'); }
+        function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
+        function formatDateToDMY(d) { if(!d || !d.includes('-')) return d; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+        function formatDateToYMD(d) { if(!d || !d.includes('/')) return d; const [day,m,y]=d.split('/'); return `${y}-${m}-${day}`; }
+        async function saveGlobalConfig() { await db.ref('autologin').update({ AdminUrl: document.getElementById('cfg_adminUrl').value, Marquee: document.getElementById('cfg_marquee').value }); showToast("Config Disimpan"); }
     </script>
 </body>
 </html>
