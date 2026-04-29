@@ -424,18 +424,39 @@ const db = firebase.database();
         }
 
         async function saveAdmin() {
-            if (loggedInEmail !== SUPER_ADMIN_EMAIL) return;
-            const email = document.getElementById('newAdminEmail').value;
-            const pass = document.getElementById('newAdminPass').value;
-            if(!email || !pass) return showToast("Isi Email & Pass!", "error");
-            const snapshot = await db.ref('AdminAccount').once('value');
-            let admins = Array.isArray(snapshot.val()) ? snapshot.val() : Object.values(snapshot.val() || {});
-            const idx = admins.findIndex(a => a.email === email);
-            if(idx > -1) admins[idx].pass = pass; else admins.push({ email, pass });
-            await db.ref('AdminAccount').set(admins);
-            showToast("Admin Diperbarui");
-            document.getElementById('newAdminEmail').value = ''; document.getElementById('newAdminPass').value = '';
+    if (loggedInEmail !== SUPER_ADMIN_EMAIL) return showToast("Hanya Super Admin!", "error");
+    
+    const email = document.getElementById('newAdminEmail').value.trim();
+    const pass = document.getElementById('newAdminPass').value.trim();
+    
+    if(!email || !pass) return showToast("Isi Email & Pass!", "error");
+
+    try {
+        // 1. DAFTARKAN KE FIREBASE AUTH (Biar bisa login)
+        // Jika email sudah ada di Auth, ini mungkin error, tapi data di DB tetap terupdate
+        try {
+            await firebase.auth().createUserWithEmailAndPassword(email, pass);
+        } catch (authError) {
+            console.log("User mungkin sudah ada di Auth, lanjut update Database.");
         }
+
+        // 2. SIMPAN KE DATABASE ADMINACCOUNT
+        const snapshot = await db.ref('AdminAccount').once('value');
+        let admins = Array.isArray(snapshot.val()) ? snapshot.val() : Object.values(snapshot.val() || {});
+        
+        const idx = admins.findIndex(a => a.email === email);
+        if(idx > -1) admins[idx].pass = pass; else admins.push({ email, pass });
+        
+        await db.ref('AdminAccount').set(admins);
+        
+        showToast("Admin Berhasil Didaftarkan!");
+        document.getElementById('newAdminEmail').value = ''; 
+        document.getElementById('newAdminPass').value = '';
+    } catch (e) {
+        showToast("Gagal: " + e.message, "error");
+    }
+}
+
 
         function confirmDeleteAdmin(index) {
             deleteIndexTarget = index;
