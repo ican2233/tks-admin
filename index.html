@@ -424,53 +424,34 @@ const db = firebase.database();
         }
 
         async function saveAdmin() {
-    // Cek apakah yang login adalah Super Admin
-    if (loggedInEmail !== SUPER_ADMIN_EMAIL) return showToast("Hanya Super Admin!", "error");
-    
     const email = document.getElementById('newAdminEmail').value.trim();
     const pass = document.getElementById('newAdminPass').value.trim();
     
     if(!email || !pass) return showToast("Isi Email & Pass!", "error");
 
     try {
-        // --- PROSES DAFTAR AUTH (TANPA LOGOUT) ---
-        // Membuat koneksi sementara agar sesi utama tidak terganggu
+        // 1. DAFTARKAN KE AUTH (Pintu Belakang biar Abang GAK LOGOUT)
         const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryRegistration");
-        
         try {
             await secondaryApp.auth().createUserWithEmailAndPassword(email, pass);
-            // Hapus koneksi sementara setelah berhasil
             await secondaryApp.delete();
-            console.log("Berhasil mendaftarkan ke Autentikasi");
-        } catch (authError) {
-            // Jika email sudah ada di Autentikasi (seperti yenatun03 di Gambar 2), abaikan saja
-            console.log("Email sudah ada di Auth, lanjut update database.");
+        } catch (authErr) {
+            console.log("Email sudah ada di Auth.");
+            await secondaryApp.delete();
         }
 
-        // --- PROSES SIMPAN KE DATABASE ---
+        // 2. SIMPAN KE DATABASE (Folder AdminAccount)
         const snapshot = await db.ref('AdminAccount').once('value');
         let admins = snapshot.val();
-        
-        // Pastikan format data adalah array
-        if (!Array.isArray(admins)) {
-            admins = admins ? Object.values(admins) : [];
-        }
+        if (!Array.isArray(admins)) admins = admins ? Object.values(admins) : [];
         
         const idx = admins.findIndex(a => a && a.email === email);
-        if(idx > -1) {
-            admins[idx].pass = pass; // Update password jika email sudah ada
-        } else {
-            admins.push({ email, pass }); // Tambah admin baru
-        }
+        if(idx > -1) admins[idx].pass = pass; else admins.push({ email, pass });
         
         await db.ref('AdminAccount').set(admins);
         
-        showToast("Admin & Autentikasi Berhasil Diupdate!");
-        document.getElementById('newAdminEmail').value = ''; 
-        document.getElementById('newAdminPass').value = '';
-        
+        showToast("Admin Berhasil Disinkronkan!");
     } catch (e) {
-        // Menangani error permission denied atau masalah lainnya
         showToast("Gagal: " + e.message, "error");
     }
 }
