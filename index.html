@@ -340,32 +340,50 @@ const db = firebase.database();
         }
 
         async function saveUser() {
-            const devId = document.getElementById('field_id').value;
-            const expVal = document.getElementById('field_expiry').value;
-            if(!devId || !expVal) return showToast("Wajib Isi!", "error");
+    const user = firebase.auth().currentUser;
+    if (!user) return showToast("Sesi habis, silakan login ulang!", "error");
 
-            let dataToSave;
-            if (currentPath === "autologin") {
-                let data = rawData || { Users: [] };
-                const newUser = { ID: devId, Expiry: formatDateToDMY(expVal) };
-                if (editingIndex !== -1) data.Users[editingIndex] = newUser; else data.Users.push(newUser);
-                dataToSave = data;
-            } else {
-                let users = Array.isArray(rawData) ? [...rawData] : (rawData ? Object.values(rawData) : []);
-                const newUser = { 
-                    id: devId, 
-                    key: document.getElementById('field_password').value, 
-                    password: document.getElementById('field_password').value, 
-                    expiresAt: expVal, 
-                    allowOffline: document.getElementById('field_offline').value === 'true'
-                };
-                if(currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
-                if (editingIndex !== -1) users[editingIndex] = newUser; else users.push(newUser);
-                dataToSave = users;
-            }
-            await db.ref(currentPath).set(dataToSave);
-            showToast("Berhasil Disimpan!"); clearForm();
+    const devId = document.getElementById('field_id').value.trim();
+    const expVal = document.getElementById('field_expiry').value;
+    
+    if(!devId || !expVal) return showToast("ID & Exp Wajib Isi!", "error");
+
+    try {
+        let dataToSave;
+        if (currentPath === "autologin") {
+            let data = rawData || { Users: [] };
+            const newUser = { ID: devId, Expiry: formatDateToDMY(expVal) };
+            if (editingIndex !== -1) data.Users[editingIndex] = newUser; 
+            else data.Users.push(newUser);
+            dataToSave = data;
+        } else {
+            let users = Array.isArray(rawData) ? [...rawData] : (rawData ? Object.values(rawData) : []);
+            const newUser = { 
+                id: devId, 
+                ID: devId,
+                username: document.getElementById('field_username').value || "User",
+                key: document.getElementById('field_password').value || "123",
+                password: document.getElementById('field_password').value || "123",
+                expiresAt: expVal,
+                Expiry: formatDateToDMY(expVal),
+                allowOffline: document.getElementById('field_offline').value === 'true'
+            };
+            if (editingIndex !== -1) users[editingIndex] = newUser; 
+            else users.push(newUser);
+            dataToSave = users;
         }
+
+        // PENTING: Gunakan await agar Firebase verifikasi Auth Abang
+        await db.ref(currentPath).set(dataToSave);
+        
+        showToast("User Berhasil Diupdate!");
+        clearForm();
+    } catch (e) {
+        console.error(e);
+        showToast("Gagal Edit: " + e.message, "error");
+    }
+}
+
 
         async function saveGlobalConfig() {
             let data = rawData || { Users: [] }; 
