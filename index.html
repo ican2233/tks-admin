@@ -80,7 +80,7 @@
             <div id="usersTab">
                 <div class="glass-card p-6 rounded-3xl mb-4 shadow-xl">
                     <div class="flex justify-between items-end mb-4">
-                        <div class="w-2/3">
+                        <div class="w-1/2">
                             <label class="text-[9px] text-blue-400 font-black uppercase tracking-widest ml-2 mb-2 block">Mode Database</label>
                             <select id="lockSelector" onchange="switchDatabase()" class="w-full bg-slate-800 p-3 rounded-xl font-bold text-xs border border-slate-600 text-white outline-none">
                                 <option value="lock1">Lock Password Only</option>
@@ -88,7 +88,16 @@
                                 <option value="autologin">Lock Auto Login</option>
                             </select>
                         </div>
-                        <div class="text-right">
+                        <div class="text-right flex items-center gap-4">
+                            <div class="flex gap-2">
+                                <button onclick="backupData()" class="w-8 h-8 bg-blue-500/20 text-blue-400 rounded-lg flex items-center justify-center" title="Backup JSON">
+                                    <i class="fa-solid fa-cloud-arrow-down text-xs"></i>
+                                </button>
+                                <button onclick="triggerRestore()" class="w-8 h-8 bg-amber-500/20 text-amber-400 rounded-lg flex items-center justify-center" title="Restore JSON">
+                                    <i class="fa-solid fa-cloud-arrow-up text-xs"></i>
+                                </button>
+                                <input type="file" id="restoreFile" class="hidden" accept=".json" onchange="handleRestore(this)">
+                            </div>
                             <p id="totalUserCounter" class="text-3xl font-black text-white italic leading-none">0</p>
                         </div>
                     </div>
@@ -174,33 +183,25 @@
         let editingIndex = -1;
         let deleteIndexTarget = -1;
 
-        // --- AUTH OBSERVER ---
         auth.onAuthStateChanged((user) => {
-            if (user) {
-                showPanel(user);
-            } else {
+            if (user) { showPanel(user); } 
+            else {
                 document.getElementById('loginScreen').classList.remove('hidden');
                 document.getElementById('mainContent').classList.add('hidden');
             }
         });
 
-        // --- SISTEM LOGIN SECURE ---
         async function handleSecureLogin() {
             const email = document.getElementById('loginEmail').value.trim();
             const pass = document.getElementById('loginPass').value.trim();
             const btn = document.getElementById('btnLogin');
-
             if (!email || !pass) return showToast("Lengkapi data!", "error");
-
-            btn.innerText = "VERIFYING...";
-            btn.disabled = true;
-
+            btn.innerText = "VERIFYING..."; btn.disabled = true;
             try {
                 await auth.signInWithEmailAndPassword(email, pass);
                 showToast("Identity Verified");
             } catch (e) {
-                btn.innerText = "Verify Identity";
-                btn.disabled = false;
+                btn.innerText = "Verify Identity"; btn.disabled = false;
                 showToast("Akses Ditolak!", "error");
             }
         }
@@ -208,10 +209,8 @@
         function showPanel(user) {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
-            
             const role = user.email === SUPER_ADMIN_EMAIL ? "SUPER_ADMIN" : "ADMIN";
             document.getElementById('roleBadge').innerText = `${user.email} (${role})`;
-
             if (role === "SUPER_ADMIN") {
                 document.getElementById('adminTabNav').classList.remove('hidden');
                 loadAdminList();
@@ -232,12 +231,10 @@
             currentPath = document.getElementById('lockSelector').value;
             const isAuto = currentPath === "autologin";
             const isLock1 = currentPath === "lock1";
-            
             document.getElementById('usernameContainer').classList.toggle('hidden', isAuto || isLock1);
             document.getElementById('passwordContainer').classList.toggle('hidden', isAuto);
             document.getElementById('offlineContainer').classList.toggle('hidden', isAuto);
             document.getElementById('configArea').classList.toggle('hidden', !isAuto);
-            
             document.getElementById('searchInput').value = ''; 
             clearForm();
             loadFirebaseData();
@@ -246,41 +243,32 @@
         function loadFirebaseData() {
             db.ref(currentPath).on('value', (snapshot) => {
                 rawData = snapshot.val();
-                
                 if (currentPath === "autologin" && rawData) {
                     document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
                     document.getElementById('cfg_marquee').value = rawData.Marquee || "";
                 }
-                
                 if (!rawData) { 
                     document.getElementById('totalUserCounter').innerText = "0"; 
                     document.getElementById('userList').innerHTML = ''; 
                     return; 
                 }
                 renderUsers();
-            }, (error) => {
-                showToast("Akses Ditolak Database!", "error");
-            });
+            }, (error) => { showToast("Akses Ditolak Database!", "error"); });
         }
 
         function renderUsers() {
             const list = document.getElementById('userList');
             const searchVal = document.getElementById('searchInput').value.toLowerCase();
             let usersArray = (currentPath === "autologin") ? (rawData.Users || []) : (Array.isArray(rawData) ? rawData : Object.values(rawData));
-            
-            list.innerHTML = '';
-            let count = 0;
-
+            list.innerHTML = ''; let count = 0;
             usersArray.forEach((u, index) => {
                 if(!u) return;
                 const searchStr = `${u.username || ''} ${u.id || u.ID || ''} ${u.key || u.password || ''}`.toLowerCase();
                 if (searchVal && !searchStr.includes(searchVal)) return;
-
                 count++;
                 const isAuto = currentPath === "autologin";
                 const displayTitle = (!isAuto && u.username) ? u.username : (u.id || u.ID);
                 const isOffline = (u.allowOffline === true || u.allowOffline === "true");
-
                 list.innerHTML += `
                     <div class="glass-card p-5 rounded-[2.5rem] mb-4 border-l-4 ${isOffline ? 'border-emerald-500' : 'border-slate-800'}">
                         <div class="flex justify-between items-center mb-3">
@@ -305,7 +293,6 @@
             const devId = document.getElementById('field_id').value;
             const expVal = document.getElementById('field_expiry').value;
             if(!devId || !expVal) return showToast("Wajib Isi!", "error");
-
             let dataToSave;
             if (currentPath === "autologin") {
                 let data = rawData || { Users: [] };
@@ -315,11 +302,9 @@
             } else {
                 let users = Array.isArray(rawData) ? [...rawData] : (rawData ? Object.values(rawData) : []);
                 const newUser = { 
-                    id: devId, 
-                    key: document.getElementById('field_password').value, 
+                    id: devId, key: document.getElementById('field_password').value, 
                     password: document.getElementById('field_password').value, 
-                    expiresAt: expVal, 
-                    allowOffline: document.getElementById('field_offline').value === 'true'
+                    expiresAt: expVal, allowOffline: document.getElementById('field_offline').value === 'true'
                 };
                 if(currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
                 if (editingIndex !== -1) users[editingIndex] = newUser; else users.push(newUser);
@@ -339,8 +324,7 @@
 
         function editUser(index) {
             let usersArr = (currentPath === "autologin") ? rawData.Users : (Array.isArray(rawData) ? rawData : Object.values(rawData));
-            const u = usersArr[index];
-            editingIndex = index;
+            const u = usersArr[index]; editingIndex = index;
             document.getElementById('formTitle').innerText = "Update User";
             document.getElementById('cancelBtn').classList.remove('hidden');
             document.getElementById('field_id').value = u.id || u.ID;
@@ -362,8 +346,39 @@
             usersArray.splice(deleteIndexTarget, 1);
             let dataToSave = (currentPath === "autologin") ? { ...rawData, Users: usersArray } : usersArray;
             await db.ref(currentPath).set(dataToSave);
-            closeConfirm();
-            showToast("User Dihapus", "error");
+            closeConfirm(); showToast("User Dihapus", "error");
+        }
+
+        // --- FUNGSI BACKUP & RESTORE ---
+        function backupData() {
+            if (!rawData) return showToast("Tidak ada data!", "error");
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(rawData, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", `backup_TKS_${currentPath}_${new Date().toLocaleDateString()}.json`);
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            showToast("Backup Berhasil");
+        }
+
+        function triggerRestore() { document.getElementById('restoreFile').click(); }
+
+        function handleRestore(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    if (confirm("Ganti seluruh data di " + currentPath + " dengan file backup ini?")) {
+                        await db.ref(currentPath).set(json);
+                        showToast("Restore Berhasil!");
+                        input.value = '';
+                    }
+                } catch (err) { showToast("File JSON Rusak!", "error"); }
+            };
+            reader.readAsText(file);
         }
 
         function loadAdminList() {
