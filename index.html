@@ -162,9 +162,23 @@
 
     <script>
         const SUPER_ADMIN_EMAIL = "suwandiikhsan1@gmail.com"; 
-        const firebaseConfig = { databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com" };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        // Konfigurasi lengkap sesuai data terbaru
+const firebaseConfig = {
+  apiKey: "AIzaSyDYmuh79olonBM6WH9Uqmv1k46rAgMIzqU",
+  authDomain: "admin-panel-tks.firebaseapp.com",
+  databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com",
+  projectId: "admin-panel-tks",
+  storageBucket: "admin-panel-tks.firebasestorage.app",
+  messagingSenderId: "543562286942",
+  appId: "1:543562286942:web:8ba8d50b09610c9d1331cf",
+  measurementId: "G-QZ8YWVRHGZ"
+};
+
+// Pastikan inisialisasi menggunakan versi compat agar cocok dengan script di <head>
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+ 
 
         let loggedInEmail = localStorage.getItem('tks_admin_email');
         let currentPath = "lock2";
