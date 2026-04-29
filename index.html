@@ -340,8 +340,16 @@ const db = firebase.database();
         }
 
         async function saveUser() {
+    // Ambil user aktif langsung dari Firebase Auth
     const user = firebase.auth().currentUser;
-    if (!user) return showToast("Sesi habis, silakan login ulang!", "error");
+    
+    // Jika user null, coba tunggu sebentar atau minta login ulang
+    if (!user) {
+        showToast("Sesi tidak valid, mencoba menyegarkan...", "error");
+        // Opsional: Redirect ke login jika benar-benar tidak ada user
+        setTimeout(() => { location.reload(); }, 1500);
+        return;
+    }
 
     const devId = document.getElementById('field_id').value.trim();
     const expVal = document.getElementById('field_expiry').value;
@@ -357,7 +365,14 @@ const db = firebase.database();
             else data.Users.push(newUser);
             dataToSave = data;
         } else {
-            let users = Array.isArray(rawData) ? [...rawData] : (rawData ? Object.values(rawData) : []);
+            // Pastikan data lama diambil dengan benar sebelum diedit
+            const snapshot = await db.ref(currentPath).once('value');
+            let users = snapshot.val();
+            
+            if (!Array.isArray(users)) {
+                users = users ? Object.values(users) : [];
+            }
+
             const newUser = { 
                 id: devId, 
                 ID: devId,
@@ -368,19 +383,27 @@ const db = firebase.database();
                 Expiry: formatDateToDMY(expVal),
                 allowOffline: document.getElementById('field_offline').value === 'true'
             };
-            if (editingIndex !== -1) users[editingIndex] = newUser; 
-            else users.push(newUser);
+
+            if (editingIndex !== -1) {
+                users[editingIndex] = newUser; 
+            } else {
+                users.push(newUser);
+            }
             dataToSave = users;
         }
 
-        // PENTING: Gunakan await agar Firebase verifikasi Auth Abang
+        // Simpan ke Firebase
         await db.ref(currentPath).set(dataToSave);
         
-        showToast("User Berhasil Diupdate!");
+        showToast("Data Berhasil Diperbarui!");
         clearForm();
     } catch (e) {
-        console.error(e);
-        showToast("Gagal Edit: " + e.message, "error");
+        console.error("Error Detail:", e);
+        if (e.message.includes("permission_denied")) {
+            showToast("Akses Ditolak! Sesi mungkin kadaluarsa.", "error");
+        } else {
+            showToast("Gagal: " + e.message, "error");
+        }
     }
 }
 
