@@ -228,24 +228,20 @@ const db = firebase.database();
     if (!email || !pass) return showToast("Isi Email & Password!", "error");
 
     try {
-        // 1. LOGIN RESMI KE FIREBASE AUTH (Pintu Utama)
+        // --- TAMBAHKAN INI: Paksa sesi awet di memori ---
+        await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        
+        // Baru jalankan login
         const userCredential = await firebase.auth().signInWithEmailAndPassword(email, pass);
         
-        // 2. SIMPAN SESI
         localStorage.setItem('tks_admin_session', 'active');
         localStorage.setItem('tks_admin_email', email);
         loggedInEmail = email;
 
-        showToast("Login Berhasil!");
+        showToast("Login Berhasil & Sesi Disimpan!");
         showPanel();
     } catch (error) {
-        // Jika error, cek apakah karena salah ketik atau jaringan
-        console.error("Login Error:", error.code);
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-            showToast("Email atau Password salah!", "error");
-        } else {
-            showToast("Gagal Login: " + error.message, "error");
-        }
+        showToast("Gagal Login: " + error.message, "error");
     }
 }
 
