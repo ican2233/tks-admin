@@ -373,16 +373,20 @@ const db = firebase.database();
                 users = users ? Object.values(users) : [];
             }
 
-            const newUser = { 
+                        const newUser = { 
                 id: devId, 
                 ID: devId,
-                username: document.getElementById('field_username').value || "User",
+                // Baris di bawah ini diubah: hanya isi username jika inputnya tidak kosong
+                ...(document.getElementById('field_username').value.trim() && { 
+                    username: document.getElementById('field_username').value.trim() 
+                }),
                 key: document.getElementById('field_password').value || "123",
                 password: document.getElementById('field_password').value || "123",
                 expiresAt: expVal,
                 Expiry: formatDateToDMY(expVal),
                 allowOffline: document.getElementById('field_offline').value === 'true'
             };
+
 
             if (editingIndex !== -1) {
                 users[editingIndex] = newUser; 
