@@ -381,6 +381,7 @@
             reader.readAsText(file);
         }
 
+        // --- MANAJEMEN ADMIN (FIXED INDEKS & HAPUS) ---
         function loadAdminList() {
             db.ref('AdminAccount').on('value', (snapshot) => {
                 const data = snapshot.val();
@@ -390,7 +391,7 @@
                 admins.forEach((admin, index) => {
                     if(!admin) return;
                     const isSuper = admin.email === SUPER_ADMIN_EMAIL;
-                    list.innerHTML += `<div class="glass-card p-4 rounded-2xl flex justify-between items-center border border-white/5">
+                    list.innerHTML += `<div class="glass-card p-4 rounded-2xl flex justify-between items-center border border-white/5 mb-2">
                         <div><p class="text-[10px] font-black text-white italic">${admin.email} ${isSuper ? '⭐' : ''}</p></div>
                         ${!isSuper ? `<button onclick="confirmDeleteAdmin(${index})" class="w-8 h-8 bg-red-500/10 text-red-400 rounded-lg"><i class="fa-solid fa-user-minus text-xs"></i></button>` : ''}
                     </div>`;
@@ -399,14 +400,42 @@
         }
 
         async function saveAdmin() {
-            const email = document.getElementById('newAdminEmail').value;
-            const pass = document.getElementById('newAdminPass').value;
+            const email = document.getElementById('newAdminEmail').value.trim();
+            const pass = document.getElementById('newAdminPass').value.trim();
             if(!email || !pass) return showToast("Isi Email & Pass!", "error");
-            const snapshot = await db.ref('AdminAccount').once('value');
-            let admins = Array.isArray(snapshot.val()) ? snapshot.val() : Object.values(snapshot.val() || {});
-            admins.push({ email, pass });
-            await db.ref('AdminAccount').set(admins);
-            showToast("Admin Ditambahkan");
+            
+            try {
+                const snapshot = await db.ref('AdminAccount').once('value');
+                let admins = Array.isArray(snapshot.val()) ? snapshot.val() : (snapshot.val() ? Object.values(snapshot.val()) : []);
+                
+                // Cek duplikat
+                if (admins.some(a => a && a.email === email)) return showToast("Email sudah ada!", "error");
+
+                admins.push({ email, pass });
+                await db.ref('AdminAccount').set(admins);
+                showToast("Admin Ditambahkan");
+                document.getElementById('newAdminEmail').value = '';
+                document.getElementById('newAdminPass').value = '';
+            } catch (e) {
+                showToast("Gagal simpan admin!", "error");
+            }
+        }
+
+        async function confirmDeleteAdmin(index) {
+            if (confirm("Hapus akses admin ini?")) {
+                try {
+                    const snapshot = await db.ref('AdminAccount').once('value');
+                    let admins = Array.isArray(snapshot.val()) ? snapshot.val() : Object.values(snapshot.val() || {});
+                    
+                    // Eksekusi hapus berdasarkan indeks array
+                    admins.splice(index, 1);
+                    
+                    await db.ref('AdminAccount').set(admins);
+                    showToast("Admin Dihapus", "error");
+                } catch (error) {
+                    showToast("Gagal hapus!", "error");
+                }
+            }
         }
 
         function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
