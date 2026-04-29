@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TKS TEAM Smart Admin - Secure</title>
+    <title>TKS TEAM Smart Admin - Final</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     
     <style>
@@ -25,19 +24,21 @@
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
         .hidden { display: none !important; }
+        .input-style { width: 100%; padding: 1rem; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(51, 65, 85, 1); border-radius: 1.5rem; font-size: 0.875rem; outline: none; transition: all 0.2s; color: white; }
+        .input-style:focus { border-color: #3b82f6; }
     </style>
 </head>
 <body class="bg-[#0b0f1a] min-h-screen pb-20 font-sans text-slate-200">
 
     <div id="toast-container"></div>
 
-    <div id="confirmModal" class="hidden fixed inset-0 z-[110] bg-black/80 backdrop-blur-md flex items-center justify-center px-6">
+    <div id="confirmModal" class="hidden fixed inset-0 z-[200] bg-black/80 backdrop-blur-md flex items-center justify-center px-6">
         <div class="glass-card p-8 rounded-[2.5rem] w-full max-w-xs border-t-4 border-red-500 shadow-2xl text-center">
             <div class="w-16 h-16 bg-red-500/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                <i class="fa-solid fa-trash-can text-2xl"></i>
             </div>
-            <h3 id="modalTitle" class="text-white font-black uppercase italic mb-2">Konfirmasi</h3>
-            <p id="modalDesc" class="text-slate-400 text-[10px] mb-8 leading-tight">Apakah Anda yakin ingin menghapus data ini secara permanen?</p>
+            <h3 id="modalTitle" class="text-white font-black uppercase italic mb-2">Hapus Data?</h3>
+            <p id="modalDesc" class="text-slate-400 text-[10px] mb-8 leading-tight">Data akan dihapus permanen dari sistem.</p>
             <div class="flex gap-3">
                 <button onclick="closeConfirm()" class="flex-1 bg-slate-800 p-4 rounded-2xl font-black text-[10px] uppercase">Batal</button>
                 <button id="finalDeleteBtn" class="flex-1 bg-red-600 p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg shadow-red-500/20">Hapus</button>
@@ -51,12 +52,12 @@
                 <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
                     <i class="fa-solid fa-user-shield text-2xl text-white"></i>
                 </div>
-                <h2 class="text-xl font-black italic uppercase tracking-tighter">Secure Admin Access</h2>
+                <h2 class="text-xl font-black italic uppercase tracking-tighter text-white">Admin Access</h2>
             </div>
             <div class="space-y-4">
-                <input type="email" id="loginEmail" placeholder="Email Admin" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none focus:border-blue-500 transition-all">
-                <input type="password" id="loginPass" placeholder="Password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none focus:border-blue-500 transition-all">
-                <button id="btnLogin" onclick="handleSecureLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-xs uppercase transition shadow-lg active:scale-95">Verify Identity</button>
+                <input type="email" id="loginEmail" placeholder="Email Admin" class="input-style">
+                <input type="password" id="loginPass" placeholder="Password" class="input-style">
+                <button onclick="checkAdminLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-xs uppercase transition shadow-lg active:scale-95">Login System</button>
             </div>
         </div>
     </div>
@@ -67,10 +68,11 @@
                 <i class="fa-solid fa-power-off"></i>
             </button>
             <h1 class="text-2xl font-black tracking-tighter italic text-white uppercase">TKS TEAM Admin</h1>
-            <p id="roleBadge" class="text-[9px] font-bold opacity-60 mt-1 uppercase tracking-widest"></p>
+            <p id="roleBadge" class="text-[9px] font-bold opacity-60 mt-1 uppercase tracking-widest text-blue-200"></p>
         </div>
 
         <div class="max-w-md mx-auto px-4">
+            
             <div id="adminTabNav" class="hidden flex gap-2 mb-6">
                 <button onclick="switchTab('users')" id="tab-users" class="flex-1 p-3 rounded-2xl bg-blue-600 text-[10px] font-black uppercase italic shadow-lg">User Management</button>
                 <button onclick="switchTab('admins')" id="tab-admins" class="flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic">Admin Settings</button>
@@ -79,111 +81,130 @@
             <div id="usersTab">
                 <div class="glass-card p-6 rounded-3xl mb-4 shadow-xl">
                     <div class="flex justify-between items-end mb-4">
-                        <div class="w-1/2">
+                        <div class="w-2/3">
                             <label class="text-[9px] text-blue-400 font-black uppercase tracking-widest ml-2 mb-2 block">Mode Database</label>
                             <select id="lockSelector" onchange="switchDatabase()" class="w-full bg-slate-800 p-3 rounded-xl font-bold text-xs border border-slate-600 text-white outline-none">
-                                <option value="lock1">Lock Password Only</option>
+                                <option value="lock1">Lock Password</option>
                                 <option value="lock2" selected>Lock Pass & Username</option>
                                 <option value="autologin">Lock Auto Login</option>
                             </select>
                         </div>
-                        <div class="text-right flex items-center gap-4">
-                            <div class="flex gap-2">
-                                <button onclick="backupData()" class="w-8 h-8 bg-blue-500/20 text-blue-400 rounded-lg flex items-center justify-center"><i class="fa-solid fa-cloud-arrow-down text-xs"></i></button>
-                                <button onclick="triggerRestore()" class="w-8 h-8 bg-amber-500/20 text-amber-400 rounded-lg flex items-center justify-center"><i class="fa-solid fa-cloud-arrow-up text-xs"></i></button>
-                                <input type="file" id="restoreFile" class="hidden" accept=".json" onchange="handleRestore(this)">
-                            </div>
+                        <div class="text-right">
                             <p id="totalUserCounter" class="text-3xl font-black text-white italic leading-none">0</p>
                         </div>
                     </div>
-                    <input type="text" id="searchInput" onkeyup="filterUserList()" placeholder="Cari user..." class="w-full p-3 bg-black/30 border border-slate-700 rounded-xl text-xs outline-none">
+                    <div class="relative mt-2">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                        <input type="text" id="searchInput" onkeyup="filterUserList()" placeholder="Search..." class="w-full p-3 pl-10 bg-black/30 border border-slate-700 rounded-xl text-xs outline-none focus:border-blue-500 transition text-white">
+                    </div>
+                </div>
+
+                <div id="configArea" class="hidden glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-blue-500">
+                    <h2 class="text-blue-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
+                        <i class="fa-solid fa-gear mr-2"></i> Config Global
+                    </h2>
+                    <div class="space-y-4">
+                        <input type="text" id="cfg_adminUrl" placeholder="Admin Telegram URL..." class="input-style">
+                        <textarea id="cfg_marquee" placeholder="Marquee / Running Text..." class="input-style h-16"></textarea>
+                        <button onclick="saveGlobalConfig()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition">Simpan Config Global</button>
+                    </div>
                 </div>
 
                 <div id="userEditorArea" class="glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-emerald-500">
-                    <h2 id="formTitle" class="text-emerald-400 font-black text-xs mb-6 uppercase">Tambah User</h2>
+                    <h2 id="formTitle" class="text-emerald-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
+                        <i class="fa-solid fa-user-plus mr-2"></i> Tambah User
+                    </h2>
                     <div class="space-y-4">
-                        <input type="text" id="field_id" placeholder="ID Device" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
-                        <input type="text" id="field_username" placeholder="Username" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
-                        <input type="text" id="field_password" placeholder="Key / Password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
-                        <input type="date" id="field_expiry" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
-                        <select id="field_offline" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
-                            <option value="true">ALLOW OFFLINE: TRUE</option>
-                            <option value="false">ALLOW OFFLINE: FALSE</option>
-                        </select>
+                        <input type="text" id="field_id" placeholder="ID Device" class="input-style">
+                        <div id="usernameContainer"><input type="text" id="field_username" placeholder="Username" class="input-style"></div>
+                        <div id="passwordContainer"><input type="text" id="field_password" placeholder="Key / Password" class="input-style"></div>
+                        <input type="date" id="field_expiry" class="input-style">
+                        <div id="offlineContainer" class="bg-black/40 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Allow Offline</span>
+                            <select id="field_offline" class="bg-blue-600 text-white font-bold text-[10px] px-3 py-1 rounded-lg outline-none cursor-pointer">
+                                <option value="true">TRUE</option>
+                                <option value="false">FALSE</option>
+                            </select>
+                        </div>
                     </div>
-                    <button onclick="saveUser()" class="w-full bg-emerald-600 p-5 rounded-2xl font-black text-xs uppercase mt-6">Simpan User</button>
+                    <div class="flex gap-2 mt-8">
+                        <button id="cancelBtn" onclick="clearForm()" class="hidden flex-1 bg-slate-700 p-5 rounded-2xl font-black text-xs uppercase">Batal</button>
+                        <button id="submitBtn" onclick="saveUser()" class="flex-[2] bg-emerald-600 p-5 rounded-2xl font-black text-xs uppercase shadow-lg">Simpan User</button>
+                    </div>
                 </div>
-                <div id="userList" class="space-y-4"></div>
+
+                <div id="userList" class="space-y-4 mt-6"></div>
             </div>
 
             <div id="adminsTab" class="hidden">
                 <div class="glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-amber-500">
                     <h2 class="text-amber-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
-                        <i class="fa-solid fa-crown mr-2"></i> Admin Control
+                        <i class="fa-solid fa-crown mr-2"></i> Owner Control
                     </h2>
                     <div class="space-y-4">
-                        <input type="email" id="newAdminEmail" placeholder="Email Admin..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
-                        <input type="text" id="newAdminPass" placeholder="Password Admin..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
-                        <button onclick="saveAdmin()" class="w-full bg-amber-600 hover:bg-amber-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition">Tambah/Update Admin</button>
+                        <input type="email" id="newAdminEmail" placeholder="Email Admin..." class="input-style">
+                        <input type="text" id="newAdminPass" placeholder="Password Admin..." class="input-style">
+                        <button onclick="saveAdmin()" class="w-full bg-amber-600 hover:bg-amber-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition">Update/Tambah Admin</button>
                     </div>
                 </div>
                 <div id="adminList" class="space-y-4"></div>
             </div>
+
         </div>
     </div>
 
     <script>
         const SUPER_ADMIN_EMAIL = "suwandiikhsan1@gmail.com"; 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDYmuh79olonBM6WH9Uqmv1k46rAgMIzqU",
-            authDomain: "admin-panel-tks.firebaseapp.com",
-            databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com",
-            projectId: "admin-panel-tks",
-            storageBucket: "admin-panel-tks.firebasestorage.app",
-            messagingSenderId: "543562286942",
-            appId: "1:543562286942:web:8ba8d50b09610c9d1331cf",
-            measurementId: "G-QZ8YWVRHGZ"
-        };
-        
+        const firebaseConfig = { databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const auth = firebase.auth();
 
+        let loggedInEmail = localStorage.getItem('tks_admin_email');
         let currentPath = "lock2";
         let rawData = null;
+        let editingIndex = -1;
         let deleteIndexTarget = -1;
-        let deleteType = ""; // "user" atau "admin"
+        let deleteType = "user"; // "user" atau "admin"
 
-        // AUTH & NAVIGATION
-        auth.onAuthStateChanged((user) => {
-            if (user) { showPanel(user); } 
-            else {
-                document.getElementById('loginScreen').classList.remove('hidden');
-                document.getElementById('mainContent').classList.add('hidden');
-            }
-        });
+        window.onload = () => { 
+            if (localStorage.getItem('tks_admin_session') === 'active') showPanel(); 
+        };
 
-        async function handleSecureLogin() {
+        async function checkAdminLogin() {
             const email = document.getElementById('loginEmail').value.trim();
             const pass = document.getElementById('loginPass').value.trim();
-            if (!email || !pass) return showToast("Lengkapi data!", "error");
-            try {
-                await auth.signInWithEmailAndPassword(email, pass);
-                showToast("Identity Verified");
-            } catch (e) { showToast("Akses Ditolak!", "error"); }
+            if(!email || !pass) return showToast("Lengkapi form!", "error");
+
+            const snapshot = await db.ref('AdminAccount').once('value');
+            const data = snapshot.val();
+            let admins = Array.isArray(data) ? data : (data ? Object.values(data) : []);
+            const found = admins.find(a => a && a.email === email && a.pass === pass);
+
+            if (found) {
+                localStorage.setItem('tks_admin_session', 'active');
+                localStorage.setItem('tks_admin_email', email);
+                loggedInEmail = email;
+                showPanel();
+                showToast("Login Berhasil");
+            } else { 
+                showToast("Email/Password Salah!", "error"); 
+            }
         }
 
-        function showPanel(user) {
+        function showPanel() {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
-            const role = user.email === SUPER_ADMIN_EMAIL ? "SUPER_ADMIN" : "ADMIN";
-            document.getElementById('roleBadge').innerText = `${user.email} (${role})`;
-            if (role === "SUPER_ADMIN") {
+            const role = loggedInEmail === SUPER_ADMIN_EMAIL ? "SUPER_ADMIN" : "ADMIN";
+            document.getElementById('roleBadge').innerText = `${loggedInEmail} (${role})`;
+            
+            if (loggedInEmail === SUPER_ADMIN_EMAIL) {
                 document.getElementById('adminTabNav').classList.remove('hidden');
                 loadAdminList();
             }
             switchDatabase();
         }
+
+        function doLogout() { localStorage.clear(); location.reload(); }
 
         function switchTab(tab) {
             document.getElementById('usersTab').classList.toggle('hidden', tab !== 'users');
@@ -192,42 +213,123 @@
             document.getElementById('tab-admins').className = tab === 'admins' ? 'flex-1 p-3 rounded-2xl bg-amber-600 text-[10px] font-black uppercase italic shadow-lg' : 'flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic';
         }
 
-        // DATABASE LOGIC
         function switchDatabase() {
             currentPath = document.getElementById('lockSelector').value;
+            const isAuto = currentPath === "autologin";
+            const isLock1 = currentPath === "lock1";
+            
+            document.getElementById('usernameContainer').classList.toggle('hidden', isAuto || isLock1);
+            document.getElementById('passwordContainer').classList.toggle('hidden', isAuto);
+            document.getElementById('offlineContainer').classList.toggle('hidden', isAuto);
+            document.getElementById('configArea').classList.toggle('hidden', !isAuto);
+            
+            document.getElementById('searchInput').value = ''; 
+            clearForm();
             loadFirebaseData();
         }
 
         function loadFirebaseData() {
             db.ref(currentPath).on('value', (snapshot) => {
                 rawData = snapshot.val();
+                if (currentPath === "autologin" && rawData) {
+                    document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
+                    document.getElementById('cfg_marquee').value = rawData.Marquee || "";
+                }
                 renderUsers();
             });
         }
 
         function renderUsers() {
             const list = document.getElementById('userList');
-            const usersArray = Array.isArray(rawData) ? rawData : (rawData ? Object.values(rawData) : []);
+            const searchVal = document.getElementById('searchInput').value.toLowerCase();
+            let usersArray = (currentPath === "autologin") ? (rawData?.Users || []) : (Array.isArray(rawData) ? rawData : (rawData ? Object.values(rawData) : []));
+            
             list.innerHTML = '';
+            let count = 0;
+
             usersArray.forEach((u, index) => {
                 if(!u) return;
+                const searchStr = `${u.username || ''} ${u.id || u.ID || ''}`.toLowerCase();
+                if (searchVal && !searchStr.includes(searchVal)) return;
+
+                count++;
+                const isAuto = currentPath === "autologin";
+                const displayTitle = (!isAuto && u.username) ? u.username : (u.id || u.ID);
+                const isOffline = (u.allowOffline === true || u.allowOffline === "true");
+
                 list.innerHTML += `
-                    <div class="glass-card p-5 rounded-[2.5rem] mb-4 border-l-4 border-slate-800">
-                        <div class="flex justify-between items-center">
-                            <div class="font-black text-white italic uppercase text-sm">${u.username || u.id}</div>
-                            <button onclick="triggerDeleteUser(${index})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl"><i class="fa-solid fa-trash text-xs"></i></button>
+                    <div class="glass-card p-5 rounded-[2.5rem] mb-4 border-l-4 border-slate-700">
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="font-black text-white italic uppercase text-sm truncate pr-4">${displayTitle}</div>
+                            <div class="flex gap-2">
+                                <button onclick="editUser(${index})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
+                                <button onclick="triggerDeleteUser(${index})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button>
+                            </div>
+                        </div>
+                        <div class="bg-black/40 p-4 rounded-2xl text-[10px] space-y-1">
+                            <div class="flex justify-between"><span class="opacity-40">ID</span><span class="text-blue-300 font-bold">${u.id || u.ID}</span></div>
+                            <div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40">EXP</span><span class="text-amber-400 font-bold">${u.Expiry || u.expiresAt || "-"}</span></div>
+                            ${!isAuto ? `<div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40">OFFLINE</span><span class="${isOffline?'text-emerald-400':'text-red-400'} font-bold">${isOffline?'YES':'NO'}</span></div>` : ''}
                         </div>
                     </div>`;
             });
-            document.getElementById('totalUserCounter').innerText = usersArray.length;
+            document.getElementById('totalUserCounter').innerText = count;
         }
 
-        // MODAL LOGIC (THE PRETTY DELETE)
+        async function saveUser() {
+            const devId = document.getElementById('field_id').value;
+            const expVal = document.getElementById('field_expiry').value;
+            if(!devId || !expVal) return showToast("Wajib Isi!", "error");
+
+            let dataToSave;
+            if (currentPath === "autologin") {
+                let data = rawData || { Users: [] };
+                const newUser = { ID: devId, Expiry: formatDateToDMY(expVal) };
+                if (editingIndex !== -1) data.Users[editingIndex] = newUser; else data.Users.push(newUser);
+                dataToSave = data;
+            } else {
+                let users = Array.isArray(rawData) ? [...rawData] : (rawData ? Object.values(rawData) : []);
+                const newUser = { 
+                    id: devId, key: document.getElementById('field_password').value, 
+                    password: document.getElementById('field_password').value, 
+                    expiresAt: expVal, allowOffline: document.getElementById('field_offline').value === 'true'
+                };
+                if(currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
+                if (editingIndex !== -1) users[editingIndex] = newUser; else users.push(newUser);
+                dataToSave = users;
+            }
+            await db.ref(currentPath).set(dataToSave);
+            showToast("Data Tersimpan"); clearForm();
+        }
+
+        async function saveGlobalConfig() {
+            let data = rawData || { Users: [] }; 
+            data.AdminUrl = document.getElementById('cfg_adminUrl').value;
+            data.Marquee = document.getElementById('cfg_marquee').value;
+            await db.ref(currentPath).set(data);
+            showToast("Global Config Updated");
+        }
+
+        function editUser(index) {
+            let usersArr = (currentPath === "autologin") ? rawData.Users : (Array.isArray(rawData) ? rawData : Object.values(rawData));
+            const u = usersArr[index];
+            editingIndex = index;
+            document.getElementById('formTitle').innerText = "Update User";
+            document.getElementById('cancelBtn').classList.remove('hidden');
+            document.getElementById('field_id').value = u.id || u.ID;
+            document.getElementById('field_username').value = u.username || '';
+            document.getElementById('field_password').value = u.key || u.password || '';
+            document.getElementById('field_offline').value = String(u.allowOffline || 'false');
+            document.getElementById('field_expiry').value = currentPath === "autologin" ? formatDateToYMD(u.Expiry) : u.expiresAt;
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        // --- MODAL DELETE SYSTEM ---
         function triggerDeleteUser(index) {
             deleteType = "user";
             deleteIndexTarget = index;
             document.getElementById('modalTitle').innerText = "Hapus User?";
-            document.getElementById('modalDesc').innerText = "Data user ini akan dihapus permanen dari database " + currentPath;
+            document.getElementById('modalDesc').innerText = "Data ini akan dihapus permanen dari database.";
             document.getElementById('confirmModal').classList.remove('hidden');
             document.getElementById('finalDeleteBtn').onclick = executeDelete;
         }
@@ -235,47 +337,41 @@
         function triggerDeleteAdmin(index, email) {
             deleteType = "admin";
             deleteIndexTarget = index;
-            document.getElementById('modalTitle').innerText = "Copot Admin?";
-            document.getElementById('modalDesc').innerText = "Hapus akses panel untuk: " + email;
+            document.getElementById('modalTitle').innerText = "Hapus Admin?";
+            document.getElementById('modalDesc').innerText = "Cabut akses untuk email: " + email;
             document.getElementById('confirmModal').classList.remove('hidden');
             document.getElementById('finalDeleteBtn').onclick = executeDelete;
         }
 
         async function executeDelete() {
             if (deleteType === "user") {
-                let users = Array.isArray(rawData) ? [...rawData] : Object.values(rawData);
-                users.splice(deleteIndexTarget, 1);
-                await db.ref(currentPath).set(users);
+                let usersArr = (currentPath === "autologin") ? [...rawData.Users] : (Array.isArray(rawData) ? [...rawData] : Object.values(rawData));
+                usersArr.splice(deleteIndexTarget, 1);
+                let toSave = (currentPath === "autologin") ? { ...rawData, Users: usersArr } : usersArr;
+                await db.ref(currentPath).set(toSave);
             } else {
-                const snapshot = await db.ref('AdminAccount').once('value');
-                let admins = Array.isArray(snapshot.val()) ? [...snapshot.val()] : Object.values(snapshot.val());
+                const snap = await db.ref('AdminAccount').once('value');
+                let admins = Array.isArray(snap.val()) ? [...snap.val()] : Object.values(snap.val());
                 admins.splice(deleteIndexTarget, 1);
                 await db.ref('AdminAccount').set(admins);
             }
-            showToast("Data Berhasil Dihapus", "error");
             closeConfirm();
+            showToast("Data Berhasil Dihapus", "error");
         }
 
-        function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
-
-        // ADMIN MANAGEMENT
         function loadAdminList() {
             db.ref('AdminAccount').on('value', (snapshot) => {
                 const list = document.getElementById('adminList');
                 list.innerHTML = '';
-                const admins = Array.isArray(snapshot.val()) ? snapshot.val() : (snapshot.val() ? Object.values(snapshot.val()) : []);
+                const data = snapshot.val();
+                let admins = Array.isArray(data) ? data : (data ? Object.values(data) : []);
                 admins.forEach((admin, index) => {
                     if(!admin) return;
                     const isSuper = admin.email === SUPER_ADMIN_EMAIL;
                     list.innerHTML += `
-                        <div class="glass-card p-4 rounded-3xl flex justify-between items-center border border-white/5 mb-3">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-[10px]">
-                                    <i class="fa-solid ${isSuper ? 'fa-crown text-amber-500' : 'fa-user text-blue-400'}"></i>
-                                </div>
-                                <span class="text-xs font-bold text-slate-300 italic">${admin.email}</span>
-                            </div>
-                            ${!isSuper ? `<button onclick="triggerDeleteAdmin(${index}, '${admin.email}')" class="w-8 h-8 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition"><i class="fa-solid fa-user-minus text-[10px]"></i></button>` : ''}
+                        <div class="glass-card p-4 rounded-2xl flex justify-between items-center border ${isSuper ? 'border-amber-500/30' : 'border-white/5'}">
+                            <div><p class="text-[10px] font-black text-white uppercase italic">${admin.email} ${isSuper ? '⭐' : ''}</p><p class="text-[9px] text-slate-500">Pass: ${admin.pass}</p></div>
+                            ${!isSuper ? `<button onclick="triggerDeleteAdmin(${index}, '${admin.email}')" class="w-8 h-8 bg-red-500/10 text-red-400 rounded-lg flex items-center justify-center"><i class="fa-solid fa-user-minus text-xs"></i></button>` : ''}
                         </div>`;
                 });
             });
@@ -284,20 +380,26 @@
         async function saveAdmin() {
             const email = document.getElementById('newAdminEmail').value.trim();
             const pass = document.getElementById('newAdminPass').value.trim();
-            if(!email || !pass) return showToast("Isi Email & Password!", "error");
+            if(!email || !pass) return showToast("Lengkapi Form Admin!", "error");
             
             const snapshot = await db.ref('AdminAccount').once('value');
             let admins = Array.isArray(snapshot.val()) ? [...snapshot.val()] : (snapshot.val() ? Object.values(snapshot.val()) : []);
             
-            if (admins.some(a => a && a.email === email)) return showToast("Email sudah terdaftar!", "error");
+            const idx = admins.findIndex(a => a && a.email === email);
+            if(idx > -1) admins[idx].pass = pass; else admins.push({ email, pass });
             
-            admins.push({ email, pass });
             await db.ref('AdminAccount').set(admins);
-            showToast("Admin Baru Ditambahkan");
+            showToast("Admin List Updated");
             document.getElementById('newAdminEmail').value = ''; document.getElementById('newAdminPass').value = '';
         }
 
-        // UTILS
+        function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
+        function clearForm() {
+            editingIndex = -1; document.getElementById('formTitle').innerText = "Tambah User";
+            document.getElementById('cancelBtn').classList.add('hidden');
+            const ids = ['field_id', 'field_username', 'field_password', 'field_expiry'];
+            ids.forEach(id => document.getElementById(id).value = '');
+        }
         function showToast(m, t='success') {
             const c = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -305,7 +407,9 @@
             toast.innerHTML = m; c.appendChild(toast);
             setTimeout(() => toast.remove(), 2500);
         }
-        function doLogout() { auth.signOut(); }
+        function filterUserList() { renderUsers(); }
+        function formatDateToDMY(d) { if(!d.includes('-')) return d; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+        function formatDateToYMD(d) { if(!d.includes('/')) return d; const [day,m,y]=d.split('/'); return `${y}-${m}-${day}`; }
     </script>
 </body>
 </html>
