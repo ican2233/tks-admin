@@ -1,79 +1,6 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TKS TEAM ADMIN - FIXED</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-    <style>
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
-        .glass-card { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .hidden { display: none !important; }
-        .toast {
-            position: fixed; top: 20px; right: 20px; z-index: 9999;
-            background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px;
-            font-size: 11px; font-weight: 800; border-left: 4px solid #3b82f6;
-            animation: slideIn 0.3s ease-out;
-        }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-    </style>
-</head>
-<body class="bg-[#0b0f1a] text-slate-200 min-h-screen pb-10">
-
-    <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#0b0f1a] flex items-center justify-center px-4">
-        <div class="glass-card p-8 rounded-[2.5rem] w-full max-w-sm border-t-4 border-blue-500">
-            <h2 class="text-center text-xl font-black italic uppercase mb-6">Admin Access</h2>
-            <div class="space-y-4">
-                <input type="email" id="loginEmail" placeholder="Email" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl outline-none focus:border-blue-500">
-                <input type="password" id="loginPass" placeholder="Password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl outline-none focus:border-blue-500">
-                <button onclick="checkAdminLogin()" class="w-full bg-blue-600 p-4 rounded-2xl font-black uppercase text-xs">Login</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="mainContent" class="hidden">
-        <div class="bg-gradient-to-r from-blue-700 to-indigo-900 p-8 shadow-2xl rounded-b-[3rem] text-center relative mb-6">
-            <h1 class="text-2xl font-black italic text-white uppercase">TKS TEAM ADMIN</h1>
-            <button onclick="location.reload()" class="absolute right-6 top-6 text-white/50"><i class="fa-solid fa-power-off"></i></button>
-        </div>
-
-        <div class="max-w-md mx-auto px-4">
-            <div class="glass-card p-6 rounded-3xl mb-6 flex justify-between items-center">
-                <div class="w-2/3">
-                    <label class="text-[9px] text-blue-400 font-black uppercase mb-1 block">Mode Database</label>
-                    <select id="lockSelector" onchange="switchDatabase()" class="w-full bg-slate-800 p-2 rounded-xl text-xs font-bold border-none outline-none">
-                        <option value="lock1">Lock Password</option>
-                        <option value="lock2" selected>Lock Pass & Username</option>
-                        <option value="autologin">Lock Auto Login</option>
-                    </select>
-                </div>
-                <div class="text-right">
-                    <p id="totalCount" class="text-3xl font-black">0</p>
-                    <p class="text-[8px] text-slate-500 font-bold uppercase">Total User</p>
-                </div>
-            </div>
-
-            <div class="glass-card p-6 rounded-[2.5rem] border-l-8 border-emerald-500 mb-8">
-                <h3 id="formTitle" class="text-emerald-400 font-black text-xs uppercase mb-4 tracking-widest">Tambah User Baru</h3>
-                <div class="space-y-3">
-                    <input type="text" id="f_id" placeholder="ID Device (Contoh: 8D3F0B...)" class="w-full p-4 bg-black/30 border border-slate-800 rounded-2xl text-sm outline-none focus:border-emerald-500">
-                    <input type="text" id="f_user" placeholder="Username" class="w-full p-4 bg-black/30 border border-slate-800 rounded-2xl text-sm outline-none focus:border-emerald-500">
-                    <input type="text" id="f_pass" placeholder="Password / Key" class="w-full p-4 bg-black/30 border border-slate-800 rounded-2xl text-sm outline-none focus:border-emerald-500">
-                    <input type="date" id="f_exp" class="w-full p-4 bg-black/30 border border-slate-800 rounded-2xl text-sm outline-none">
-                    <button onclick="saveUser()" class="w-full bg-emerald-600 p-4 rounded-2xl font-black uppercase text-xs shadow-lg shadow-emerald-900/20">Simpan Data</button>
-                </div>
-            </div>
-
-            <div id="userList" class="space-y-4">
-                </div>
-        </div>
-    </div>
-
     <script>
+        const SUPER_ADMIN_EMAIL = "suwandiikhsan1@gmail.com"; 
+        
         const firebaseConfig = {
             apiKey: "AIzaSyDYmuh79olonBM6WH9Uqmv1k46rAgMIzqU",
             authDomain: "admin-panel-tks.firebaseapp.com",
@@ -86,129 +13,151 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+
+        let loggedInEmail = localStorage.getItem('tks_admin_email');
         let currentPath = "lock2";
+        let cachedData = null;
         let editKey = null;
 
-        // Login Check
+        window.onload = () => { 
+            if (localStorage.getItem('tks_admin_session') === 'active') showPanel();
+        };
+
         async function checkAdminLogin() {
-            const email = document.getElementById('loginEmail').value;
-            const pass = document.getElementById('loginPass').value;
-            // Simple Super Admin check
-            if(email === "suwandiikhsan1@gmail.com" && pass === "suwandi123") {
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('mainContent').classList.remove('hidden');
-                switchDatabase();
+            const email = document.getElementById('loginEmail').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+            if (email === SUPER_ADMIN_EMAIL && pass === "suwandi123") {
+                localStorage.setItem('tks_admin_session', 'active');
+                localStorage.setItem('tks_admin_email', email);
+                showPanel();
             } else {
                 alert("Login Gagal!");
             }
         }
 
-        function switchDatabase() {
-            currentPath = document.getElementById('lockSelector').value;
-            db.ref(currentPath).off(); // Reset listener lama
-            loadData();
+        function showPanel() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            switchDatabase();
         }
 
-        function loadData() {
-            db.ref(currentPath).on('value', (snap) => {
-                const list = document.getElementById('userList');
-                list.innerHTML = '';
-                const data = snap.val();
-                let count = 0;
+        function switchDatabase() {
+            currentPath = document.getElementById('lockSelector').value;
+            db.ref(currentPath).off();
+            loadFirebaseData();
+        }
 
-                if(data) {
-                    // Cek jika path adalah autologin (karena strukturnya agak beda biasanya)
-                    const users = (currentPath === 'autologin' && data.Users) ? data.Users : data;
-                    
-                    Object.entries(users).forEach(([key, val]) => {
-                        if(!val || typeof val !== 'object') return;
-                        count++;
-                        
-                        // Menyesuaikan pembacaan field agar tidak error
-                        const dID = val.id || val.ID || "-";
-                        const dUser = val.username || val.Username || "No Username";
-                        const dPass = val.password || val.key || val.Pass || "No Pass";
-                        const dExp = val.expiresAt || val.Expiry || "-";
-
-                        list.innerHTML += `
-                            <div class="glass-card p-5 rounded-[2rem] border-l-4 border-blue-500 relative">
-                                <div class="flex justify-between items-start mb-3">
-                                    <div>
-                                        <h4 class="font-black text-white text-sm uppercase">${dUser}</h4>
-                                        <p class="text-[10px] text-blue-400 font-bold">${dID}</p>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <button onclick="prepareEdit('${key}')" class="text-blue-400 p-2"><i class="fa-solid fa-pen"></i></button>
-                                        <button onclick="deleteUser('${key}')" class="text-red-500 p-2"><i class="fa-solid fa-trash"></i></button>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-2 gap-2 bg-black/40 p-3 rounded-xl">
-                                    <div>
-                                        <p class="text-[8px] text-slate-500 uppercase font-bold">Password</p>
-                                        <p class="text-[10px] text-emerald-400 font-mono">${dPass}</p>
-                                    </div>
-                                    <div class="text-right">
-                                        <p class="text-[8px] text-slate-500 uppercase font-bold">Expiry</p>
-                                        <p class="text-[10px] text-amber-500 font-bold">${dExp}</p>
-                                    </div>
-                                </div>
-                            </div>`;
-                    });
-                }
-                document.getElementById('totalCount').innerText = count;
+        function loadFirebaseData() {
+            db.ref(currentPath).on('value', (snapshot) => {
+                cachedData = snapshot.val();
+                renderUsers();
             });
         }
 
+        function renderUsers() {
+            const list = document.getElementById('userList');
+            list.innerHTML = '';
+            // Ambil data dari path 'Users' jika di mode autologin
+            const usersObj = (currentPath === 'autologin') ? (cachedData?.Users || {}) : (cachedData || {});
+            let count = 0;
+
+            Object.entries(usersObj).forEach(([key, u]) => {
+                if(!u || typeof u !== 'object') return;
+                count++;
+                
+                // DETEKSI FIELD (Cari username/user dan password/key/pass)
+                const dUser = u.username || u.Username || u.user || "No Username";
+                const dPass = u.password || u.key || u.Pass || u.pass || "No Password";
+                const dID = u.id || u.ID || key;
+                const dExp = u.expiresAt || u.Expiry || "-";
+
+                list.innerHTML += `
+                    <div class="glass-card p-5 rounded-[2rem] mb-4 border-l-4 border-blue-600 shadow-lg">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="w-full">
+                                <p class="text-[9px] text-blue-400 font-black uppercase tracking-widest mb-1">Username</p>
+                                <h3 class="text-white font-black italic uppercase text-sm">${dUser}</h3>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="editUser('${key}')" class="w-8 h-8 bg-blue-500/10 text-blue-400 rounded-lg"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                                <button onclick="triggerDelete('${key}', 'user')" class="w-8 h-8 bg-red-500/10 text-red-400 rounded-lg"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 bg-black/40 p-3 rounded-2xl border border-white/5">
+                            <div>
+                                <p class="text-[8px] text-slate-500 font-bold uppercase mb-1">Password / Key</p>
+                                <p class="text-emerald-400 font-mono text-[10px] font-bold tracking-wider">${dPass}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-[8px] text-slate-500 font-bold uppercase mb-1">ID Device</p>
+                                <p class="text-blue-300 font-bold text-[9px] truncate">${dID}</p>
+                            </div>
+                        </div>
+                        <div class="mt-2 pl-1">
+                             <p class="text-[8px] text-amber-500 font-bold uppercase tracking-tighter">Kadaluarsa: ${dExp}</p>
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('totalUserCounter').innerText = count;
+        }
+
         async function saveUser() {
-            const id = document.getElementById('f_id').value;
-            const user = document.getElementById('f_user').value;
-            const pass = document.getElementById('f_pass').value;
-            const exp = document.getElementById('f_exp').value;
+            const devId = document.getElementById('field_id').value.trim();
+            const user = document.getElementById('field_username').value.trim();
+            const pass = document.getElementById('field_password').value.trim();
+            const exp = document.getElementById('field_expiry').value;
 
-            if(!id || !exp) return alert("ID dan Expiry wajib diisi!");
+            if(!devId || !exp) return alert("Minimal ID & Exp diisi!");
 
-            const payload = {
-                id: id, ID: id,
-                username: user, Username: user,
+            // Kita simpan ke banyak field sekaligus biar aman kebaca aplikasi manapun
+            const newUser = { 
+                id: devId, ID: devId, 
+                username: user, Username: user, 
                 password: pass, key: pass, Pass: pass,
-                expiresAt: exp, Expiry: exp
+                expiresAt: exp, Expiry: exp 
             };
 
             const path = (currentPath === 'autologin') ? `autologin/Users` : currentPath;
             
             if(editKey) {
-                await db.ref(`${path}/${editKey}`).update(payload);
+                await db.ref(`${path}/${editKey}`).update(newUser);
                 editKey = null;
-                document.getElementById('formTitle').innerText = "Tambah User Baru";
             } else {
-                await db.ref(path).push(payload);
+                await db.ref(path).push(newUser);
             }
-
-            // Clear Form
-            ['f_id','f_user','f_pass','f_exp'].forEach(i => document.getElementById(i).value = '');
-            alert("Data Berhasil Disimpan!");
+            
+            showToast("Data Berhasil Disimpan!");
+            clearForm();
         }
 
-        function prepareEdit(key) {
-            const path = (currentPath === 'autologin') ? `autologin/Users/${key}` : `${currentPath}/${key}`;
-            db.ref(path).once('value', (s) => {
-                const v = s.val();
-                editKey = key;
-                document.getElementById('formTitle').innerText = "Update User: " + (v.username || key);
-                document.getElementById('f_id').value = v.id || v.ID || '';
-                document.getElementById('f_user').value = v.username || v.Username || '';
-                document.getElementById('f_pass').value = v.password || v.key || '';
-                document.getElementById('f_exp').value = v.expiresAt || v.Expiry || '';
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            });
+        function editUser(key) {
+            const u = (currentPath === 'autologin') ? cachedData.Users[key] : cachedData[key];
+            editKey = key;
+            document.getElementById('formTitle').innerText = "Update User";
+            document.getElementById('cancelBtn').classList.remove('hidden');
+            document.getElementById('field_id').value = u.id || u.ID || '';
+            document.getElementById('field_username').value = u.username || u.Username || '';
+            document.getElementById('field_password').value = u.password || u.key || u.Pass || '';
+            document.getElementById('field_expiry').value = u.expiresAt || u.Expiry || '';
+            window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
-        async function deleteUser(key) {
-            if(confirm("Hapus user ini secara permanen?")) {
+        function triggerDelete(key) {
+            if(confirm("Hapus user ini?")) {
                 const path = (currentPath === 'autologin') ? `autologin/Users/${key}` : `${currentPath}/${key}`;
-                await db.ref(path).remove();
+                db.ref(path).remove();
+                showToast("Data Dihapus", "error");
             }
         }
+
+        function clearForm() {
+            editKey = null;
+            document.getElementById('formTitle').innerText = "Tambah User";
+            document.getElementById('cancelBtn').classList.add('hidden');
+            ['field_id','field_username','field_password','field_expiry'].forEach(id => document.getElementById(id).value = '');
+        }
+
+        function doLogout() { localStorage.clear(); location.reload(); }
+        function showToast(m, t='success') { alert(m); }
     </script>
-</body>
-</html>
