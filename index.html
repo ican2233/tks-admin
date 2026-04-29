@@ -208,30 +208,30 @@
         // ------------------------------
 
         async function checkAdminLogin() {
-    const email = document.getElementById('loginEmail').value;
-    const pass = document.getElementById('loginPass').value;
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass = document.getElementById('loginPass').value.trim();
+
+    if (!email || !pass) return showToast("Isi Email & Password!", "error");
 
     try {
-        // LOGIN RESMI KE FIREBASE AUTH (Biar dikenali oleh Rules)
-        await firebase.auth().signInWithEmailAndPassword(email, pass);
+        // 1. LOGIN RESMI KE FIREBASE AUTH (Pintu Utama)
+        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, pass);
         
-        // Cek lagi ke database AdminAccount (opsional, buat double security)
-        const snapshot = await db.ref('AdminAccount').once('value');
-        const data = snapshot.val();
-        let admins = Array.isArray(data) ? data : (data ? Object.values(data) : []);
-        const found = admins.find(a => a && a.email === email && a.pass === pass);
+        // 2. SIMPAN SESI
+        localStorage.setItem('tks_admin_session', 'active');
+        localStorage.setItem('tks_admin_email', email);
+        loggedInEmail = email;
 
-        if (found) {
-            localStorage.setItem('tks_admin_session', 'active');
-            localStorage.setItem('tks_admin_email', email);
-            loggedInEmail = email;
-            showPanel();
-        } else {
-            showToast("Akses Ditolak!", "error");
-        }
+        showToast("Login Berhasil!");
+        showPanel();
     } catch (error) {
-        showToast("Email/Password Salah atau Admin Belum Terdaftar di Auth!", "error");
-        console.error(error);
+        // Jika error, cek apakah karena salah ketik atau jaringan
+        console.error("Login Error:", error.code);
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+            showToast("Email atau Password salah!", "error");
+        } else {
+            showToast("Gagal Login: " + error.message, "error");
+        }
     }
 }
 
