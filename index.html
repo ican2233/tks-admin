@@ -76,6 +76,16 @@
             </div>
 
             <div id="usersTab">
+                <div class="flex gap-2 mb-4">
+                    <button onclick="backupData()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-2xl font-black text-[10px] uppercase shadow-lg transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-download"></i> Backup
+                    </button>
+                    <label class="flex-1 bg-slate-700 hover:bg-slate-600 text-white p-3 rounded-2xl font-black text-[10px] uppercase shadow-lg transition flex items-center justify-center gap-2 cursor-pointer text-center">
+                        <i class="fa-solid fa-upload"></i> Restore
+                        <input type="file" id="restoreFile" class="hidden" onchange="restoreData(event)" accept=".json">
+                    </label>
+                </div>
+
                 <div class="glass-card p-6 rounded-3xl mb-4 shadow-xl">
                     <div class="flex justify-between items-end mb-4">
                         <div class="w-2/3">
@@ -166,6 +176,37 @@
             if (localStorage.getItem('tks_admin_session') === 'active') showPanel(); 
         };
 
+        // --- FITUR BACKUP & RESTORE ---
+        function backupData() {
+            if (!rawData) return showToast("Tidak ada data untuk dibackup", "error");
+            const dataStr = JSON.stringify(rawData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            const exportFileDefaultName = `Backup_${currentPath}_${new Date().toLocaleDateString()}.json`;
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            showToast("Backup Berhasil!");
+        }
+
+        function restoreData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    if (confirm(`Timpa data ${currentPath} dengan file ini?`)) {
+                        await db.ref(currentPath).set(json);
+                        showToast("Restore Berhasil!");
+                        document.getElementById('restoreFile').value = '';
+                    }
+                } catch (err) { showToast("File tidak valid!", "error"); }
+            };
+            reader.readAsText(file);
+        }
+        // ------------------------------
+
         async function checkAdminLogin() {
     const email = document.getElementById('loginEmail').value;
     const pass = document.getElementById('loginPass').value;
@@ -232,13 +273,10 @@
         function loadFirebaseData() {
             db.ref(currentPath).on('value', (snapshot) => {
                 rawData = snapshot.val();
-                
-                // ISI OTOMATIS GLOBAL CONFIG JIKA MODE AUTOLOGIN
                 if (currentPath === "autologin" && rawData) {
                     document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
                     document.getElementById('cfg_marquee').value = rawData.Marquee || "";
                 }
-                
                 if (!rawData) { 
                     document.getElementById('totalUserCounter').innerText = "0"; 
                     document.getElementById('userList').innerHTML = ''; 
@@ -252,7 +290,6 @@
             const list = document.getElementById('userList');
             const searchVal = document.getElementById('searchInput').value.toLowerCase();
             let usersArray = (currentPath === "autologin") ? (rawData.Users || []) : (Array.isArray(rawData) ? rawData : Object.values(rawData));
-            
             list.innerHTML = '';
             let count = 0;
 
@@ -264,12 +301,8 @@
                 count++;
                 const isAuto = currentPath === "autologin";
                 const displayTitle = (!isAuto && u.username) ? u.username : (u.id || u.ID);
-                
-                // Logic Allow Offline (Membaca u.allowOffline)
                 const isOffline = (u.allowOffline === true || u.allowOffline === "true");
-                const offlineBadge = isOffline ? 
-                    '<span class="text-emerald-400 font-bold">YES</span>' : 
-                    '<span class="text-red-400 font-bold">NO</span>';
+                const offlineBadge = isOffline ? '<span class="text-emerald-400 font-bold">YES</span>' : '<span class="text-red-400 font-bold">NO</span>';
 
                 list.innerHTML += `
                     <div class="glass-card p-5 rounded-[2.5rem] mb-4">
