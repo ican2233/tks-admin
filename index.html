@@ -6,8 +6,11 @@
     <title>TKS TEAM Smart Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
     <style>
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
         .glass-card { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
@@ -22,6 +25,8 @@
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
         .hidden { display: none !important; }
+        .btn-action { transition: all 0.2s ease; }
+        .btn-action:active { transform: scale(0.95); }
     </style>
 </head>
 <body class="bg-[#0b0f1a] min-h-screen pb-20 font-sans text-slate-200">
@@ -33,11 +38,11 @@
             <div class="w-16 h-16 bg-red-500/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <i class="fa-solid fa-trash-can text-2xl"></i>
             </div>
-            <h3 class="text-white font-black uppercase italic mb-2">Hapus Data?</h3>
-            <p class="text-slate-400 text-[10px] mb-8 leading-tight">Data akan dihapus permanen dari sistem.</p>
+            <h3 class="text-white font-black uppercase italic mb-2 text-sm">Hapus Data?</h3>
+            <p class="text-slate-400 text-[10px] mb-8 leading-tight">Data akan dihapus permanen dari cloud database.</p>
             <div class="flex gap-3">
                 <button onclick="closeConfirm()" class="flex-1 bg-slate-800 p-4 rounded-2xl font-black text-[10px] uppercase">Batal</button>
-                <button id="finalDeleteBtn" class="flex-1 bg-red-600 p-4 rounded-2xl font-black text-[10px] uppercase">Hapus</button>
+                <button id="finalDeleteBtn" class="flex-1 bg-red-600 p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg shadow-red-500/20">Hapus</button>
             </div>
         </div>
     </div>
@@ -45,15 +50,16 @@
     <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#0b0f1a] flex items-center justify-center px-4">
         <div class="glass-card p-8 rounded-[2.5rem] w-full max-w-sm border-t-4 border-blue-500 shadow-2xl">
             <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
                     <i class="fa-solid fa-user-shield text-2xl text-white"></i>
                 </div>
                 <h2 class="text-xl font-black italic uppercase tracking-tighter">Admin Access</h2>
+                <p class="text-[9px] text-slate-500 font-bold uppercase mt-1">TKS TEAM Secure Protocol</p>
             </div>
             <div class="space-y-4">
-                <input type="email" id="loginEmail" placeholder="Email Admin" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none focus:border-blue-500">
-                <input type="password" id="loginPass" placeholder="Password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none focus:border-blue-500">
-                <button onclick="checkAdminLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-xs uppercase transition shadow-lg">Login System</button>
+                <input type="email" id="loginEmail" placeholder="Email Admin" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none focus:border-blue-500 transition-all">
+                <input type="password" id="loginPass" placeholder="Password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none focus:border-blue-500 transition-all">
+                <button onclick="checkAdminLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-xs uppercase transition-all shadow-lg active:scale-95">Login System</button>
             </div>
         </div>
     </div>
@@ -68,10 +74,9 @@
 
         <div class="max-w-md mx-auto px-4">
             
-            <div id="adminTabNav" class="hidden flex gap-2 mb-6 text-center">
-                <button onclick="switchTab('users')" id="tab-users" class="flex-1 p-3 rounded-2xl bg-blue-600 text-[10px] font-black uppercase italic shadow-lg">Users</button>
-                <button onclick="switchTab('admins')" id="tab-admins" class="flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic">Admins</button>
-                <button onclick="switchTab('system')" id="tab-system" class="flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic text-amber-400">Database</button>
+            <div id="adminTabNav" class="hidden flex gap-2 mb-6">
+                <button onclick="switchTab('users')" id="tab-users" class="flex-1 p-3 rounded-2xl bg-blue-600 text-[10px] font-black uppercase italic shadow-lg">User Management</button>
+                <button onclick="switchTab('admins')" id="tab-admins" class="flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic">Admin Settings</button>
             </div>
 
             <div id="usersTab">
@@ -87,22 +92,12 @@
                         </div>
                         <div class="text-right">
                             <p id="totalUserCounter" class="text-3xl font-black text-white italic leading-none">0</p>
+                            <p class="text-[8px] text-slate-500 font-bold uppercase">Total</p>
                         </div>
                     </div>
                     <div class="relative mt-2">
                         <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                        <input type="text" id="searchInput" onkeyup="filterUserList()" placeholder="Search" class="w-full p-3 pl-10 bg-black/30 border border-slate-700 rounded-xl text-xs outline-none focus:border-blue-500 transition">
-                    </div>
-                </div>
-
-                <div id="configArea" class="hidden glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-blue-500">
-                    <h2 class="text-blue-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
-                        <i class="fa-solid fa-gear mr-2"></i> Config Global
-                    </h2>
-                    <div class="space-y-4">
-                        <input type="text" id="cfg_adminUrl" placeholder="Admin Telegram URL..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
-                        <textarea id="cfg_marquee" placeholder="Marquee / Running Text..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none h-16"></textarea>
-                        <button onclick="saveGlobalConfig()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition">Simpan Config Global</button>
+                        <input type="text" id="searchInput" onkeyup="filterUserList()" placeholder="Cari ID atau Username..." class="w-full p-3 pl-10 bg-black/30 border border-slate-700 rounded-xl text-xs outline-none focus:border-blue-500 transition">
                     </div>
                 </div>
 
@@ -124,54 +119,61 @@
                         </div>
                     </div>
                     <div class="flex gap-2 mt-8">
-                        <button id="cancelBtn" onclick="clearForm()" class="hidden flex-1 bg-slate-700 p-5 rounded-2xl font-black text-xs uppercase transition">Batal</button>
-                        <button id="submitBtn" onclick="saveUser()" class="flex-[2] bg-emerald-600 p-5 rounded-2xl font-black text-xs uppercase transition">Simpan User</button>
+                        <button id="cancelBtn" onclick="clearForm()" class="hidden flex-1 bg-slate-700 p-5 rounded-2xl font-black text-xs uppercase btn-action">Batal</button>
+                        <button id="submitBtn" onclick="saveUser()" class="flex-[2] bg-emerald-600 p-5 rounded-2xl font-black text-xs uppercase btn-action">Simpan Data</button>
                     </div>
                 </div>
 
                 <div id="userList" class="space-y-4 mt-6"></div>
             </div>
 
-            <div id="adminsTab" class="hidden">
-                <div class="glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-amber-500">
+            <div id="adminsTab" class="hidden space-y-6">
+                <div class="glass-card p-6 rounded-[2.5rem] shadow-2xl border-l-8 border-blue-500">
+                    <h2 class="text-blue-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
+                        <i class="fa-solid fa-database mr-2"></i> Maintenance & Backup
+                    </h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="backupData()" class="bg-blue-600/20 text-blue-400 border border-blue-500/30 p-4 rounded-2xl font-black text-[10px] uppercase hover:bg-blue-600 hover:text-white transition-all">
+                            <i class="fa-solid fa-download mb-2 block text-lg"></i> Backup JSON
+                        </button>
+                        <label class="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 p-4 rounded-2xl font-black text-[10px] uppercase text-center cursor-pointer hover:bg-emerald-600 hover:text-white transition-all">
+                            <i class="fa-solid fa-upload mb-2 block text-lg"></i> Restore Data
+                            <input type="file" id="restoreFile" class="hidden" onchange="restoreData(this)">
+                        </label>
+                    </div>
+                </div>
+
+                <div id="configArea" class="hidden glass-card p-6 rounded-[2.5rem] shadow-2xl border-l-8 border-indigo-500">
+                    <h2 class="text-indigo-400 font-black text-xs mb-6 uppercase tracking-widest">
+                        <i class="fa-solid fa-globe mr-2"></i> Config Global
+                    </h2>
+                    <div class="space-y-4">
+                        <input type="text" id="cfg_adminUrl" placeholder="Admin Telegram URL..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
+                        <textarea id="cfg_marquee" placeholder="Marquee / Running Text..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none h-16"></textarea>
+                        <button onclick="saveGlobalConfig()" class="w-full bg-indigo-600 text-white p-4 rounded-2xl font-black text-[10px] uppercase btn-action">Update Global Config</button>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 rounded-[2.5rem] shadow-2xl border-l-8 border-amber-500">
                     <h2 class="text-amber-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
                         <i class="fa-solid fa-crown mr-2"></i> Owner Control
                     </h2>
                     <div class="space-y-4">
                         <input type="email" id="newAdminEmail" placeholder="Email Admin..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
                         <input type="text" id="newAdminPass" placeholder="Password Admin..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
-                        <button onclick="saveAdmin()" class="w-full bg-amber-600 hover:bg-amber-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition">Update/Tambah Admin</button>
+                        <button onclick="saveAdmin()" class="w-full bg-amber-600 hover:bg-amber-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase btn-action shadow-lg">Tambah Admin</button>
                     </div>
                 </div>
                 <div id="adminList" class="space-y-4"></div>
-            </div>
-
-            <div id="systemTab" class="hidden">
-                <div class="glass-card p-6 rounded-[2.5rem] shadow-2xl border-l-8 border-indigo-500">
-                    <h2 class="text-indigo-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
-                        <i class="fa-solid fa-database mr-2"></i> Maintenance
-                    </h2>
-                    <div class="space-y-4">
-                        <button onclick="backupDatabase()" class="w-full bg-indigo-600 p-5 rounded-2xl font-black text-[10px] uppercase italic flex items-center justify-center gap-3">
-                            <i class="fa-solid fa-download"></i> Download Backup (JSON)
-                        </button>
-                        
-                        <div class="relative">
-                            <input type="file" id="restoreFile" onchange="restoreDatabase(this)" class="hidden" accept=".json">
-                            <label for="restoreFile" class="w-full bg-slate-700 p-5 rounded-2xl font-black text-[10px] uppercase italic flex items-center justify-center gap-3 cursor-pointer">
-                                <i class="fa-solid fa-upload"></i> Restore From File
-                            </label>
-                        </div>
-                        <p class="text-[8px] text-slate-500 text-center uppercase tracking-widest italic">Hati-hati: Restore akan menimpa data mode yang sedang aktif!</p>
-                    </div>
-                </div>
             </div>
 
         </div>
     </div>
 
     <script>
-        // CONFIGURASI FIREBASE SESUAI PERMINTAAN
+        const SUPER_ADMIN_EMAIL = "suwandiikhsan1@gmail.com"; 
+        
+        // Firebase Config Updated
         const firebaseConfig = {
             apiKey: "AIzaSyDYmuh79olonBM6WH9Uqmv1k46rAgMIzqU",
             authDomain: "admin-panel-tks.firebaseapp.com",
@@ -179,38 +181,63 @@
             projectId: "admin-panel-tks",
             storageBucket: "admin-panel-tks.firebasestorage.app",
             messagingSenderId: "543562286942",
-            appId: "1:543562286942:web:8ba8d50b09610c9d1331cf",
-            measurementId: "G-QZ8YWVRHGZ"
+            appId: "1:543562286942:web:8ba8d50b09610c9d1331cf"
         };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const auth = firebase.auth();
 
-        const SUPER_ADMIN_EMAIL = "suwandiikhsan1@gmail.com"; 
         let loggedInEmail = localStorage.getItem('tks_admin_email');
         let currentPath = "lock2";
-        let rawData = null;
-        let editingIndex = -1;
-        let deleteIndexTarget = -1;
+        let cachedData = null;
+        let editKey = null;
+        let deleteKeyTarget = null;
 
         window.onload = () => { 
-            if (localStorage.getItem('tks_admin_session') === 'active') showPanel(); 
+            if (localStorage.getItem('tks_admin_session') === 'active') {
+                // Relogin ke Firebase Auth agar Rules auth != null diizinkan
+                const savedPass = localStorage.getItem('tks_admin_token');
+                if(savedPass) {
+                    auth.signInWithEmailAndPassword(loggedInEmail, savedPass)
+                        .then(() => showPanel())
+                        .catch(() => doLogout());
+                } else {
+                    doLogout();
+                }
+            } 
         };
 
         async function checkAdminLogin() {
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
-            const snapshot = await db.ref('AdminAccount').once('value');
-            const data = snapshot.val();
-            let admins = Array.isArray(data) ? data : (data ? Object.values(data) : []);
-            const found = admins.find(a => a && a.email === email && a.pass === pass);
 
-            if (found) {
-                localStorage.setItem('tks_admin_session', 'active');
-                localStorage.setItem('tks_admin_email', email);
-                loggedInEmail = email;
-                showPanel();
-            } else { 
-                showToast("Email/Password Salah!", "error"); 
+            try {
+                // 1. Auth ke Firebase (Supaya tembus Rules)
+                await auth.signInWithEmailAndPassword(email, pass);
+                
+                // 2. Cek data di AdminAccount node
+                const snapshot = await db.ref('AdminAccount').once('value');
+                const admins = snapshot.val();
+                let adminFound = false;
+
+                if(admins) {
+                    Object.values(admins).forEach(a => {
+                        if(a.email === email && a.pass === pass) adminFound = true;
+                    });
+                }
+
+                if (adminFound || email === SUPER_ADMIN_EMAIL) {
+                    localStorage.setItem('tks_admin_session', 'active');
+                    localStorage.setItem('tks_admin_email', email);
+                    localStorage.setItem('tks_admin_token', pass);
+                    loggedInEmail = email;
+                    showPanel();
+                } else {
+                    showToast("Akses Ditolak!", "error");
+                }
+            } catch (error) {
+                showToast("Login Gagal: " + error.message, "error");
             }
         }
 
@@ -224,39 +251,39 @@
             switchDatabase();
         }
 
-        function doLogout() { localStorage.clear(); location.reload(); }
+        function doLogout() { 
+            auth.signOut();
+            localStorage.clear(); 
+            location.reload(); 
+        }
 
         function switchTab(tab) {
             document.getElementById('usersTab').classList.toggle('hidden', tab !== 'users');
             document.getElementById('adminsTab').classList.toggle('hidden', tab !== 'admins');
-            document.getElementById('systemTab').classList.toggle('hidden', tab !== 'system');
-            
             document.getElementById('tab-users').className = tab === 'users' ? 'flex-1 p-3 rounded-2xl bg-blue-600 text-[10px] font-black uppercase italic shadow-lg' : 'flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic';
             document.getElementById('tab-admins').className = tab === 'admins' ? 'flex-1 p-3 rounded-2xl bg-amber-600 text-[10px] font-black uppercase italic shadow-lg' : 'flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic';
-            document.getElementById('tab-system').className = tab === 'system' ? 'flex-1 p-3 rounded-2xl bg-indigo-600 text-[10px] font-black uppercase italic shadow-lg' : 'flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic';
         }
 
         function switchDatabase() {
             currentPath = document.getElementById('lockSelector').value;
             const isAuto = currentPath === "autologin";
-            const isLock1 = currentPath === "lock1";
             
-            document.getElementById('usernameContainer').classList.toggle('hidden', isAuto || isLock1);
+            document.getElementById('usernameContainer').classList.toggle('hidden', isAuto || currentPath === "lock1");
             document.getElementById('passwordContainer').classList.toggle('hidden', isAuto);
             document.getElementById('offlineContainer').classList.toggle('hidden', isAuto);
             document.getElementById('configArea').classList.toggle('hidden', !isAuto);
             
-            document.getElementById('searchInput').value = ''; 
             clearForm();
+            db.ref(currentPath).off();
             loadFirebaseData();
         }
 
         function loadFirebaseData() {
             db.ref(currentPath).on('value', (snapshot) => {
-                rawData = snapshot.val();
-                if (currentPath === "autologin" && rawData) {
-                    document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
-                    document.getElementById('cfg_marquee').value = rawData.Marquee || "";
+                cachedData = snapshot.val();
+                if (currentPath === "autologin" && cachedData) {
+                    document.getElementById('cfg_adminUrl').value = cachedData.AdminUrl || "";
+                    document.getElementById('cfg_marquee').value = cachedData.Marquee || "";
                 }
                 renderUsers();
             });
@@ -265,14 +292,16 @@
         function renderUsers() {
             const list = document.getElementById('userList');
             const searchVal = document.getElementById('searchInput').value.toLowerCase();
-            let usersArray = (currentPath === "autologin") ? (rawData?.Users || []) : (Array.isArray(rawData) ? rawData : (rawData ? Object.values(rawData) : []));
-            
             list.innerHTML = '';
+            
+            if (!cachedData) { document.getElementById('totalUserCounter').innerText = "0"; return; }
+
+            const usersObj = (currentPath === 'autologin') ? (cachedData.Users || {}) : cachedData;
             let count = 0;
 
-            usersArray.forEach((u, index) => {
+            Object.entries(usersObj).forEach(([key, u]) => {
                 if(!u) return;
-                const searchStr = `${u.username || ''} ${u.id || u.ID || ''} ${u.key || u.password || ''}`.toLowerCase();
+                const searchStr = `${u.username || ''} ${u.id || u.ID || ''}`.toLowerCase();
                 if (searchVal && !searchStr.includes(searchVal)) return;
 
                 count++;
@@ -281,19 +310,18 @@
                 const isOffline = (u.allowOffline === true || u.allowOffline === "true");
 
                 list.innerHTML += `
-                    <div class="glass-card p-5 rounded-[2.5rem] mb-4">
+                    <div class="glass-card p-5 rounded-[2.5rem] mb-4 border-l-4 border-slate-700">
                         <div class="flex justify-between items-center mb-3">
                             <div class="font-black text-white italic uppercase text-sm truncate pr-4">${displayTitle}</div>
                             <div class="flex gap-2">
-                                <button onclick="editUser(${index})" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl"><i class="fa-solid fa-pen text-xs"></i></button>
-                                <button onclick="deleteUser(${index})" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl"><i class="fa-solid fa-trash text-xs"></i></button>
+                                <button onclick="editUser('${key}')" class="w-9 h-9 bg-blue-500/10 text-blue-400 rounded-xl"><i class="fa-solid fa-pen text-xs"></i></button>
+                                <button onclick="triggerDelete('${key}')" class="w-9 h-9 bg-red-500/10 text-red-400 rounded-xl"><i class="fa-solid fa-trash text-xs"></i></button>
                             </div>
                         </div>
                         <div class="bg-black/40 p-4 rounded-2xl text-[10px] space-y-1">
-                            <div class="flex justify-between"><span class="opacity-40 uppercase">ID</span><span class="text-blue-300 font-bold">${u.id || u.ID}</span></div>
-                            ${u.username ? `<div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40 uppercase">User</span><span>${u.username}</span></div>` : ''}
-                            ${!isAuto ? `<div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40 uppercase">Key</span><span class="text-indigo-400 font-bold">${u.key || u.password || "-"}</span></div>` : ''}
-                            <div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40 uppercase">Exp</span><span class="text-amber-400 font-bold">${u.Expiry || u.expiresAt || "-"}</span></div>
+                            <div class="flex justify-between"><span class="opacity-40 uppercase">Device ID</span><span class="text-blue-300 font-bold">${u.id || u.ID}</span></div>
+                            ${!isAuto ? `<div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40 uppercase">Password</span><span class="text-indigo-400 font-bold">${u.key || u.password || "-"}</span></div>` : ''}
+                            <div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40 uppercase">Expired</span><span class="text-amber-400 font-bold">${u.Expiry || u.expiresAt || "-"}</span></div>
                             ${!isAuto ? `<div class="flex justify-between border-t border-white/5 pt-1 mt-1"><span class="opacity-40 uppercase">Offline</span><span class="${isOffline?'text-emerald-400':'text-red-400'} font-bold">${isOffline?'YES':'NO'}</span></div>` : ''}
                         </div>
                     </div>`;
@@ -302,46 +330,72 @@
         }
 
         async function saveUser() {
-            const devId = document.getElementById('field_id').value;
+            const devId = document.getElementById('field_id').value.trim();
             const expVal = document.getElementById('field_expiry').value;
-            if(!devId || !expVal) return showToast("Wajib Isi ID & Exp!", "error");
+            if(!devId || !expVal) return showToast("Lengkapi ID & Tanggal!", "error");
 
-            let dataToSave;
-            if (currentPath === "autologin") {
-                let data = rawData || { Users: [] };
-                if(!data.Users) data.Users = [];
-                const newUser = { ID: devId, Expiry: formatDateToDMY(expVal) };
-                if (editingIndex !== -1) data.Users[editingIndex] = newUser; else data.Users.push(newUser);
-                dataToSave = data;
-            } else {
-                let users = Array.isArray(rawData) ? [...rawData] : (rawData ? Object.values(rawData) : []);
-                const newUser = { 
-                    id: devId, 
-                    key: document.getElementById('field_password').value, 
-                    password: document.getElementById('field_password').value, 
-                    expiresAt: expVal, 
-                    allowOffline: document.getElementById('field_offline').value === 'true'
-                };
-                if(currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
-                if (editingIndex !== -1) users[editingIndex] = newUser; else users.push(newUser);
-                dataToSave = users;
+            const newUser = {
+                id: devId, ID: devId,
+                expiresAt: expVal,
+                Expiry: (currentPath === 'autologin') ? formatDateToDMY(expVal) : expVal,
+                allowOffline: document.getElementById('field_offline').value === 'true'
+            };
+
+            if (currentPath === "lock2") newUser.username = document.getElementById('field_username').value || "User";
+            if (currentPath !== "autologin") {
+                newUser.key = document.getElementById('field_password').value;
+                newUser.password = newUser.key;
             }
-            await db.ref(currentPath).set(dataToSave);
-            showToast("Berhasil Disimpan!"); clearForm();
+
+            const path = (currentPath === 'autologin') ? `autologin/Users/${editKey || db.ref().push().key}` : `${currentPath}/${editKey || db.ref().push().key}`;
+            
+            try {
+                await db.ref(path).set(newUser);
+                showToast("Data Tersimpan!"); clearForm();
+            } catch (e) { showToast("Gagal: " + e.message, "error"); }
+        }
+
+        // --- BACKUP & RESTORE ---
+        async function backupData() {
+            try {
+                const snapshot = await db.ref().once('value');
+                const data = snapshot.val();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `TKS_Backup_${new Date().toLocaleDateString()}.json`;
+                a.click();
+                showToast("Backup Berhasil!");
+            } catch (e) { showToast("Gagal Backup", "error"); }
+        }
+
+        function restoreData(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    if (confirm("Hapus semua data lama dan ganti dengan backup ini?")) {
+                        await db.ref().set(json);
+                        showToast("Restore Berhasil!");
+                        location.reload();
+                    }
+                } catch (err) { showToast("File JSON tidak valid!", "error"); }
+            };
+            reader.readAsText(file);
         }
 
         async function saveGlobalConfig() {
-            let data = rawData || { Users: [] }; 
-            data.AdminUrl = document.getElementById('cfg_adminUrl').value;
-            data.Marquee = document.getElementById('cfg_marquee').value;
-            await db.ref(currentPath).set(data);
-            showToast("Config Global Diupdate");
+            const updates = { AdminUrl: document.getElementById('cfg_adminUrl').value, Marquee: document.getElementById('cfg_marquee').value };
+            await db.ref('autologin').update(updates);
+            showToast("Config Diupdate");
         }
 
-        function editUser(index) {
-            let usersArr = (currentPath === "autologin") ? rawData.Users : (Array.isArray(rawData) ? rawData : Object.values(rawData));
-            const u = usersArr[index];
-            editingIndex = index;
+        function editUser(key) {
+            const u = (currentPath === 'autologin') ? cachedData.Users[key] : cachedData[key];
+            editKey = key;
             document.getElementById('formTitle').innerText = "Update User";
             document.getElementById('cancelBtn').classList.remove('hidden');
             document.getElementById('field_id').value = u.id || u.ID;
@@ -352,120 +406,58 @@
             window.scrollTo({top: 150, behavior: 'smooth'});
         }
 
-        function deleteUser(index) {
-            deleteIndexTarget = index;
+        function triggerDelete(key) {
+            deleteKeyTarget = key;
             document.getElementById('confirmModal').classList.remove('hidden');
             document.getElementById('finalDeleteBtn').onclick = executeDelete;
         }
 
         async function executeDelete() {
-            if (currentPath === "autologin") {
-                let usersArray = [...rawData.Users];
-                usersArray.splice(deleteIndexTarget, 1);
-                await db.ref(currentPath + '/Users').set(usersArray);
-            } else {
-                let usersArray = Array.isArray(rawData) ? [...rawData] : Object.values(rawData);
-                usersArray.splice(deleteIndexTarget, 1);
-                await db.ref(currentPath).set(usersArray);
-            }
+            const path = (currentPath === 'autologin') ? `autologin/Users/${deleteKeyTarget}` : `${currentPath}/${deleteKeyTarget}`;
+            await db.ref(path).remove();
             closeConfirm();
-            showToast("User Dihapus", "error");
+            showToast("Dihapus", "error");
         }
 
-        // --- BACKUP & RESTORE LOGIC ---
-        function backupDatabase() {
-            if(!rawData) return showToast("Tidak ada data untuk backup", "error");
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(rawData, null, 2));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", `backup_${currentPath}_${new Date().toLocaleDateString()}.json`);
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
-            showToast("Backup Siap!");
-        }
-
-        function restoreDatabase(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const json = JSON.parse(e.target.result);
-                    if (confirm("Apakah anda yakin ingin me-restore data? Data lama di mode ini akan hilang!")) {
-                        await db.ref(currentPath).set(json);
-                        showToast("Restore Berhasil!");
-                        input.value = ""; // reset input
-                    }
-                } catch (err) {
-                    showToast("File JSON tidak valid!", "error");
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        // --- ADMIN LIST LOGIC ---
         function loadAdminList() {
-            db.ref('AdminAccount').on('value', (snapshot) => {
-                const data = snapshot.val();
+            db.ref('AdminAccount').on('value', (snap) => {
                 const list = document.getElementById('adminList');
                 list.innerHTML = '';
-                let admins = Array.isArray(data) ? data : (data ? Object.values(data) : []);
-                admins.forEach((admin, index) => {
-                    if(!admin) return;
+                if(!snap.val()) return;
+                Object.entries(snap.val()).forEach(([key, admin]) => {
                     const isSuper = admin.email === SUPER_ADMIN_EMAIL;
-                    list.innerHTML += `<div class="glass-card p-4 rounded-2xl flex justify-between items-center border ${isSuper ? 'border-amber-500/30' : 'border-white/5'}">
-                        <div><p class="text-[10px] font-black text-white uppercase italic">${admin.email} ${isSuper ? '⭐' : ''}</p><p class="text-[9px] text-slate-500">Pass: ${admin.pass}</p></div>
-                        ${!isSuper ? `<button onclick="confirmDeleteAdmin(${index})" class="w-8 h-8 bg-red-500/10 text-red-400 rounded-lg"><i class="fa-solid fa-user-minus text-xs"></i></button>` : ''}
+                    list.innerHTML += `<div class="glass-card p-4 rounded-2xl flex justify-between items-center border border-white/5">
+                        <div><p class="text-[10px] font-black text-white uppercase italic">${admin.email} ${isSuper?'⭐':''}</p></div>
+                        ${!isSuper ? `<button onclick="deleteAdmin('${key}')" class="text-red-400 p-2"><i class="fa-solid fa-user-minus"></i></button>` : ''}
                     </div>`;
                 });
             });
         }
 
         async function saveAdmin() {
-            if (loggedInEmail !== SUPER_ADMIN_EMAIL) return;
-            const email = document.getElementById('newAdminEmail').value;
-            const pass = document.getElementById('newAdminPass').value;
-            if(!email || !pass) return showToast("Isi Email & Pass!", "error");
-            const snapshot = await db.ref('AdminAccount').once('value');
-            let admins = Array.isArray(snapshot.val()) ? snapshot.val() : Object.values(snapshot.val() || {});
-            const idx = admins.findIndex(a => a.email === email);
-            if(idx > -1) admins[idx].pass = pass; else admins.push({ email, pass });
-            await db.ref('AdminAccount').set(admins);
-            showToast("Admin Diperbarui");
-            document.getElementById('newAdminEmail').value = ''; document.getElementById('newAdminPass').value = '';
-        }
-
-        function confirmDeleteAdmin(index) {
-            deleteIndexTarget = index;
-            document.getElementById('confirmModal').classList.remove('hidden');
-            document.getElementById('finalDeleteBtn').onclick = async () => {
-                const snapshot = await db.ref('AdminAccount').once('value');
-                let admins = Array.isArray(snapshot.val()) ? [...snapshot.val()] : Object.values(snapshot.val());
-                admins.splice(deleteIndexTarget, 1);
-                await db.ref('AdminAccount').set(admins);
-                closeConfirm();
-                showToast("Admin Dihapus", "error");
-            };
+            const email = document.getElementById('newAdminEmail').value.trim();
+            const pass = document.getElementById('newAdminPass').value.trim();
+            if(!email || !pass) return;
+            await db.ref(`AdminAccount/${db.ref().push().key}`).set({ email, pass });
+            showToast("Admin Ditambahkan");
         }
 
         function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
         function filterUserList() { renderUsers(); }
         function clearForm() {
-            editingIndex = -1; document.getElementById('formTitle').innerText = "Tambah User";
+            editKey = null; document.getElementById('formTitle').innerText = "Tambah User";
             document.getElementById('cancelBtn').classList.add('hidden');
-            document.getElementById('field_id').value = ''; document.getElementById('field_username').value = '';
-            document.getElementById('field_password').value = ''; document.getElementById('field_expiry').value = '';
+            ['field_id','field_username','field_password','field_expiry'].forEach(id => document.getElementById(id).value = '');
         }
         function showToast(m, t='success') {
             const c = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = `toast ${t==='error'?'border-red-500':'border-emerald-500'}`;
+            toast.className = `toast ${t==='error'?'border-red-500':'border-blue-500'}`;
             toast.innerHTML = m; c.appendChild(toast);
             setTimeout(() => toast.remove(), 2500);
         }
-        function formatDateToDMY(d) { if(!d || !d.includes('-')) return d; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
-        function formatDateToYMD(d) { if(!d || !d.includes('/')) return d; const [day,m,y]=d.split('/'); return `${y}-${m}-${day}`; }
+        function formatDateToDMY(d) { if(!d.includes('-')) return d; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+        function formatDateToYMD(d) { if(!d.includes('/')) return d; const [day,m,y]=d.split('/'); return `${y}-${m}-${day}`; }
     </script>
 </body>
 </html>
