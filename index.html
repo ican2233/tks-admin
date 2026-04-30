@@ -88,6 +88,17 @@
                             <p id="totalUserCounter" class="text-3xl font-black text-white italic leading-none">0</p>
                         </div>
                     </div>
+
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="backupData()" class="flex-1 bg-indigo-600/20 border border-indigo-500/50 text-indigo-400 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition">
+                            <i class="fa-solid fa-cloud-arrow-down mr-1"></i> Backup
+                        </button>
+                        <button onclick="document.getElementById('restoreInput').click()" class="flex-1 bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition">
+                            <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Restore
+                        </button>
+                        <input type="file" id="restoreInput" class="hidden" accept=".json" onchange="restoreData(event)">
+                    </div>
+
                     <div class="relative mt-2">
                         <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
                         <input type="text" id="searchInput" onkeyup="filterUserList()" placeholder="Search" class="w-full p-3 pl-10 bg-black/30 border border-slate-700 rounded-xl text-xs outline-none focus:border-blue-500 transition">
@@ -220,7 +231,6 @@
             db.ref(currentPath).on('value', (snapshot) => {
                 rawData = snapshot.val();
                 
-                // ISI OTOMATIS GLOBAL CONFIG JIKA MODE AUTOLOGIN
                 if (currentPath === "autologin" && rawData) {
                     document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
                     document.getElementById('cfg_marquee').value = rawData.Marquee || "";
@@ -252,7 +262,6 @@
                 const isAuto = currentPath === "autologin";
                 const displayTitle = (!isAuto && u.username) ? u.username : (u.id || u.ID);
                 
-                // Logic Allow Offline (Membaca u.allowOffline)
                 const isOffline = (u.allowOffline === true || u.allowOffline === "true");
                 const offlineBadge = isOffline ? 
                     '<span class="text-emerald-400 font-bold">YES</span>' : 
@@ -315,6 +324,41 @@
                 await db.ref(currentPath).set(data);
                 showToast("Config Global Diupdate");
             } catch (e) { showToast("Gagal Update", "error"); }
+        }
+
+        // FUNGSI BACKUP DATA KE JSON
+        async function backupData() {
+            try {
+                const snapshot = await db.ref(currentPath).once('value');
+                const data = snapshot.val();
+                if (!data) return showToast("Tidak ada data untuk dibackup", "error");
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", `backup_${currentPath}_${new Date().getTime()}.json`);
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+                showToast("Backup Berhasil Diunduh");
+            } catch (e) { showToast("Gagal Backup", "error"); }
+        }
+
+        // FUNGSI RESTORE DATA DARI JSON
+        function restoreData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (confirm("Ganti data Firebase dengan data dari file ini?")) {
+                        await db.ref(currentPath).set(importedData);
+                        showToast("Restore Berhasil!");
+                    }
+                } catch (err) { showToast("File JSON tidak valid!", "error"); }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
         }
 
         function editUser(index) {
@@ -410,5 +454,3 @@
     </script>
 </body>
 </html>
-
-
