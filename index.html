@@ -24,7 +24,6 @@
 
     <div id="toast-container"></div>
 
-    <!-- Modal Hapus -->
     <div id="confirmModal" class="hidden fixed inset-0 z-[110] bg-black/80 backdrop-blur-md flex items-center justify-center px-6">
         <div class="glass-card p-8 rounded-[2.5rem] w-full max-w-xs border-t-4 border-red-500 shadow-2xl text-center">
             <div class="w-16 h-16 bg-red-500/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-trash-can text-2xl"></i></div>
@@ -37,7 +36,6 @@
         </div>
     </div>
 
-    <!-- Login -->
     <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#0b0f1a] flex items-center justify-center px-4">
         <div class="glass-card p-8 rounded-[2.5rem] w-full max-w-sm border-t-4 border-blue-500 shadow-2xl">
             <div class="text-center mb-8"><i class="fa-solid fa-user-shield text-4xl text-blue-500 mb-4"></i><h2 class="text-xl font-black italic uppercase">Admin Access</h2></div>
@@ -47,7 +45,6 @@
         </div>
     </div>
 
-    <!-- Main -->
     <div id="mainContent" class="hidden">
         <div class="bg-gradient-to-r from-blue-700 to-indigo-900 p-8 shadow-2xl mb-6 rounded-b-[3rem] text-center relative">
             <button onclick="doLogout()" class="absolute right-6 top-6 text-white/50"><i class="fa-solid fa-power-off"></i></button>
@@ -98,64 +95,51 @@
     </div>
 
     <script>
-    const SUPER_ADMIN_EMAIL = "suwandiikhsan1@gmail.com"; 
-    const firebaseConfig = { databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com" };
-    
-    // Inisialisasi Firebase
-    firebase.initializeApp(firebaseConfig);
-    
-    // DB bisa diakses global
-    const db = firebase.database();
+        const firebaseConfig = {
+            apiKey: "AIzaSyDYmuh79olonBM6WH9Uqmv1k46rAgMIzqU",
+            authDomain: "admin-panel-tks.firebaseapp.com",
+            databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com",
+            projectId: "admin-panel-tks",
+            storageBucket: "admin-panel-tks.firebasestorage.app",
+            messagingSenderId: "543562286942",
+            appId: "1:543562286942:web:8ba8d50b09610c9d1331cf",
+            measurementId: "G-QZ8YWVRHGZ"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const SUPER_ADMIN_EMAIL = "suwandiikhsan1@gmail.com"; 
 
-    let loggedInEmail = localStorage.getItem('tks_admin_email');
-    let currentPath = "lock2";
-    let rawData = null;
-    let deleteIndexTarget = -1;
+        let loggedInEmail = localStorage.getItem('tks_admin_email');
+        let currentPath = "lock2";
+        let rawData = null;
+        let deleteIndexTarget = -1;
 
-    window.onload = () => { if (localStorage.getItem('tks_admin_session') === 'active') showPanel(); };
+        window.onload = () => { if (localStorage.getItem('tks_admin_session') === 'active') showPanel(); };
 
-    async function checkAdminLogin() {
-    // 1. Ambil input
-    const email = document.getElementById('loginEmail').value;
-    const pass = document.getElementById('loginPass').value;
-
-    if (!email || !pass) {
-        alert("Email dan Password wajib diisi!");
-        return;
-    }
-
-    try {
-        // 2. Inisialisasi Auth di dalam fungsi untuk menghindari error "not initialized"
-        const auth = firebase.auth();
-        
-        // 3. Coba Login
-        await auth.signInWithEmailAndPassword(email, pass);
-        
-        // 4. Jika berhasil
-        localStorage.setItem('tks_admin_session', 'active');
-        localStorage.setItem('tks_admin_email', email);
-        loggedInEmail = email;
-        
-        // Panggil fungsi utama
-        showPanel();
-        
-    } catch (e) {
-        // Jika error, tampilkan di alert agar Anda tahu masalahnya
-        console.error(e);
-        alert("Login Gagal: " + e.message);
-    }
-}
-
-
-    function showPanel() {
-        document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('mainContent').classList.remove('hidden');
-        if (loggedInEmail === SUPER_ADMIN_EMAIL) {
-            document.getElementById('adminTabNav').classList.remove('hidden');
-            loadAdminList();
+        async function checkAdminLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            if (!email || !pass) return alert("Email dan Password wajib diisi!");
+            try {
+                await firebase.auth().signInWithEmailAndPassword(email, pass);
+                localStorage.setItem('tks_admin_session', 'active');
+                localStorage.setItem('tks_admin_email', email);
+                loggedInEmail = email;
+                showPanel();
+            } catch (e) {
+                alert("Login Gagal: " + e.message);
+            }
         }
-        switchDatabase();
-    }
+
+        function showPanel() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            if (loggedInEmail === SUPER_ADMIN_EMAIL) {
+                document.getElementById('adminTabNav').classList.remove('hidden');
+                loadAdminList();
+            }
+            switchDatabase();
+        }
 
         function switchDatabase() {
             currentPath = document.getElementById('lockSelector').value;
@@ -183,7 +167,7 @@
                 </div>`;
             });
         }
-
+        
         function deleteUser(i) {
             deleteIndexTarget = i;
             document.getElementById('confirmModal').classList.remove('hidden');
