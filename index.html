@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    
 <style>
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
         .glass-card { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
@@ -175,23 +177,38 @@
             if (localStorage.getItem('tks_admin_session') === 'active') showPanel(); 
         };
 
-        async function checkAdminLogin() {
-            const email = document.getElementById('loginEmail').value;
-            const pass = document.getElementById('loginPass').value;
-            const snapshot = await db.ref('AdminAccount').once('value');
-            const data = snapshot.val();
-            let admins = Array.isArray(data) ? data : (data ? Object.values(data) : []);
-            const found = admins.find(a => a && a.email === email && a.pass === pass);
+        // Tambahkan inisialisasi auth
+const auth = firebase.auth();
 
-            if (found) {
-                localStorage.setItem('tks_admin_session', 'active');
-                localStorage.setItem('tks_admin_email', email);
-                loggedInEmail = email;
-                showPanel();
-            } else { 
-                showToast("Email/Password Salah!", "error"); 
-            }
+async function checkAdminLogin() {
+    const email = document.getElementById('loginEmail').value;
+    const pass = document.getElementById('loginPass').value;
+
+    try {
+        // 1. Login ke Firebase Auth
+        // Pastikan email ini sudah Anda daftarkan di menu Authentication > Users di Firebase Console
+        await auth.signInWithEmailAndPassword(email, pass);
+        
+        // 2. Cek apakah email tersebut ada di database AdminAccount (opsional, untuk validasi tambahan)
+        const snapshot = await db.ref('AdminAccount').once('value');
+        const data = snapshot.val();
+        let admins = Array.isArray(data) ? data : (data ? Object.values(data) : []);
+        const found = admins.find(a => a && a.email === email && a.pass === pass);
+
+        if (found) {
+            localStorage.setItem('tks_admin_session', 'active');
+            localStorage.setItem('tks_admin_email', email);
+            loggedInEmail = email;
+            showPanel();
+        } else {
+            showToast("Akun tidak terdaftar di AdminAccount!", "error");
+            auth.signOut();
         }
+    } catch (error) {
+        showToast("Login Gagal: " + error.message, "error");
+    }
+}
+
 
         function showPanel() {
             document.getElementById('loginScreen').classList.add('hidden');
