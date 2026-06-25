@@ -189,12 +189,24 @@ let editingAdminIndex = -1; // Tambahkan ini
 
         // --- USER MANAGEMENT (For All Admins) ---
         function loadUserData() {
-            db.ref('users').on('value', (snapshot) => {
-                const data = snapshot.val();
-                userRecords = Array.isArray(data) ? data : (data ? Object.values(data) : []);
-                renderUsers();
-            });
+    db.ref('users').on('value', (snapshot) => {
+        try {
+            const data = snapshot.val();
+            
+            // Cek apakah data berisi string error
+            if (typeof data === 'string' && data.includes('Error:')) {
+                console.error("Database berisi data rusak:", data);
+                return;
+            }
+            
+            userRecords = Array.isArray(data) ? data : (data ? Object.values(data) : []);
+            renderUsers();
+        } catch (e) {
+            console.error("Gagal memproses data user:", e);
         }
+    });
+}
+
 
         function renderUsers() {
             const list = document.getElementById('userList');
