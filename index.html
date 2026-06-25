@@ -178,30 +178,64 @@
         }
 
         function renderUsers() {
-            const list = document.getElementById('userList'), search = document.getElementById('searchInput').value.toLowerCase();
-            let arr = (currentPath === "autologin") ? (rawData?.Users || []) : (Array.isArray(rawData) ? rawData : Object.values(rawData || {}));
-            list.innerHTML = '';
-            let count = 0;
-            arr.forEach((u, i) => {
-                if(!u || !JSON.stringify(u).toLowerCase().includes(search)) return;
-                count++;
-                list.innerHTML += `<div class="glass-card p-5 rounded-2xl flex justify-between items-center">
-                    <div><p class="font-bold text-sm">${u.username || u.id || u.ID}</p><p class="text-[9px] text-slate-400">EXP: ${u.Expiry || u.expiresAt || '-'}</p></div>
-                    <div class="flex gap-2"><button onclick="editUser(${i})" class="text-blue-400 p-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteUser(${i})" class="text-red-400 p-2"><i class="fa-solid fa-trash"></i></button></div>
-                </div>`;
-            });
-            document.getElementById('totalUserCounter').innerText = count;
-        }
+    const list = document.getElementById('userList');
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    let rawDataObj = rawData || {};
+    
+    list.innerHTML = '';
+    let count = 0;
+    
+    // Loop berdasarkan KEY (Device ID), bukan index array
+    Object.keys(rawDataObj).forEach((deviceId) => {
+        let u = rawDataObj[deviceId];
+        if(!u || !JSON.stringify(u).toLowerCase().includes(search)) return;
+        
+        count++;
+        let isOffline = u.allowOffline === true || u.allowOffline === "true";
+        let offlineText = isOffline ? '<span class="text-emerald-400">ON</span>' : '<span class="text-red-400">OFF</span>';
+        
+        list.innerHTML += `<div class="glass-card p-5 rounded-2xl flex justify-between items-center mb-3">
+            <div>
+                <p class="font-bold text-sm text-white">${u.savedId || deviceId}</p>
+                <p class="text-[9px] text-slate-400">Key: ${u.savedKey ? '***' : '-'}</p>
+                <p class="text-[9px] text-slate-400">Offline: ${offlineText}</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="editUser('${deviceId}')" class="text-blue-400 p-2"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteUser('${deviceId}')" class="text-red-400 p-2"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        </div>`;
+    });
+    document.getElementById('totalUserCounter').innerText = count;
+}
+
 
         async function saveUser() {
-            const devId = document.getElementById('field_id').value;
-            if(!devId) return showToast("Isi ID!", "error");
-            let data = currentPath === "autologin" ? (rawData || {Users:[]}) : (Array.isArray(rawData) ? [...rawData] : []);
-            const u = { id: devId, key: document.getElementById('field_password').value, expiresAt: document.getElementById('field_expiry').value };
-            if(editingIndex > -1) data[editingIndex] = u; else data.push(u);
-            await db.ref(currentPath).set(data);
-            showToast("Berhasil Disimpan!"); clearForm();
-        }
+    const devId = document.getElementById('field_id').value; // Ini adalah savedId
+    const key = document.getElementById('field_password').value; // Ini adalah savedKey
+    
+    if(!devId || !key) return showToast("Isi ID dan Key!", "error");
+
+    // Ambil data lama dulu agar tidak menimpa user lain
+    let snapshot = await db.ref(currentPath).once('value');
+    let data = snapshot.val() || {};
+    
+    // Gunakan devId sebagai KEY (bukan array index) sesuai format SIGER
+    data[devId] = {
+        savedId: devId,
+        savedKey: key,
+        allowOffline: document.getElementById('field_offline').value === 'true'
+    };
+
+    try {
+        await db.ref(currentPath).set(data);
+        showToast("User Berhasil Disimpan!"); 
+        clearForm();
+    } catch (e) {
+        showToast("Gagal Simpan: " + e.message, "error");
+    }
+}
+
 
         function editUser(i) {
             editingIndex = i;
