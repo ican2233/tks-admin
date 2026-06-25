@@ -98,39 +98,64 @@
     </div>
 
     <script>
-        const SUPER_ADMIN_EMAIL = "suwandiikhsan1@gmail.com"; 
-        const firebaseConfig = { databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com" };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+    const SUPER_ADMIN_EMAIL = "suwandiikhsan1@gmail.com"; 
+    const firebaseConfig = { databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com" };
+    
+    // Inisialisasi Firebase
+    firebase.initializeApp(firebaseConfig);
+    
+    // DB bisa diakses global
+    const db = firebase.database();
+
+    let loggedInEmail = localStorage.getItem('tks_admin_email');
+    let currentPath = "lock2";
+    let rawData = null;
+    let deleteIndexTarget = -1;
+
+    window.onload = () => { if (localStorage.getItem('tks_admin_session') === 'active') showPanel(); };
+
+    async function checkAdminLogin() {
+    // 1. Ambil input
+    const email = document.getElementById('loginEmail').value;
+    const pass = document.getElementById('loginPass').value;
+
+    if (!email || !pass) {
+        alert("Email dan Password wajib diisi!");
+        return;
+    }
+
+    try {
+        // 2. Inisialisasi Auth di dalam fungsi untuk menghindari error "not initialized"
         const auth = firebase.auth();
+        
+        // 3. Coba Login
+        await auth.signInWithEmailAndPassword(email, pass);
+        
+        // 4. Jika berhasil
+        localStorage.setItem('tks_admin_session', 'active');
+        localStorage.setItem('tks_admin_email', email);
+        loggedInEmail = email;
+        
+        // Panggil fungsi utama
+        showPanel();
+        
+    } catch (e) {
+        // Jika error, tampilkan di alert agar Anda tahu masalahnya
+        console.error(e);
+        alert("Login Gagal: " + e.message);
+    }
+}
 
-        let loggedInEmail = localStorage.getItem('tks_admin_email');
-        let currentPath = "lock2";
-        let rawData = null;
-        let editingIndex = -1;
-        let deleteIndexTarget = -1;
 
-        window.onload = () => { if (localStorage.getItem('tks_admin_session') === 'active') showPanel(); };
-
-        async function checkAdminLogin() {
-            try {
-                await auth.signInWithEmailAndPassword(document.getElementById('loginEmail').value, document.getElementById('loginPass').value);
-                localStorage.setItem('tks_admin_session', 'active');
-                localStorage.setItem('tks_admin_email', document.getElementById('loginEmail').value);
-                loggedInEmail = document.getElementById('loginEmail').value;
-                showPanel();
-            } catch (e) { showToast("Login Gagal: " + e.message, "error"); }
+    function showPanel() {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('mainContent').classList.remove('hidden');
+        if (loggedInEmail === SUPER_ADMIN_EMAIL) {
+            document.getElementById('adminTabNav').classList.remove('hidden');
+            loadAdminList();
         }
-
-        function showPanel() {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('mainContent').classList.remove('hidden');
-            if (loggedInEmail === SUPER_ADMIN_EMAIL) {
-                document.getElementById('adminTabNav').classList.remove('hidden');
-                loadAdminList();
-            }
-            switchDatabase();
-        }
+        switchDatabase();
+    }
 
         function switchDatabase() {
             currentPath = document.getElementById('lockSelector').value;
