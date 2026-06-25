@@ -4,53 +4,81 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TKS TEAM Smart Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-</head>
-<body>
 
-    <div id="loginScreen">...</div>
-    <div id="mainContent" class="hidden">...</div>
+    <style>
+        .glass-card { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="bg-[#0b0f1a] min-h-screen text-slate-200">
+
+    <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#0b0f1a] flex items-center justify-center px-4">
+        <div class="glass-card p-8 rounded-[2.5rem] w-full max-w-sm border-t-4 border-blue-500 shadow-2xl">
+            <h2 class="text-xl font-black text-center mb-8">Admin Access</h2>
+            <div class="space-y-4">
+                <input type="email" id="loginEmail" placeholder="Email Admin" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl">
+                <input type="password" id="loginPass" placeholder="Password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl">
+                <button onclick="handleLogin()" class="w-full bg-blue-600 p-4 rounded-2xl font-black">LOGIN SYSTEM</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainContent" class="hidden p-8">
+        <h1 class="text-2xl font-black italic">Dashboard</h1>
+        <button onclick="handleLogout()" class="mt-4 bg-red-600 px-6 py-2 rounded-xl">Logout</button>
+    </div>
 
     <script>
-        // 1. Konfigurasi
+        // 1. Inisialisasi
         const firebaseConfig = { databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com" };
-        
-        // 2. Inisialisasi
         firebase.initializeApp(firebaseConfig);
 
-        // 3. Wrapper untuk memastikan Auth selalu tersedia
+        // 2. Fungsi Akses Global (Pencegah error initialization)
         const getAuth = () => firebase.auth();
         const getDb = () => firebase.database();
 
-        // 4. Listener State (Gunakan ini untuk kontrol UI)
-        firebase.auth().onAuthStateChanged((user) => {
+        // 3. Listener Status Login
+        getAuth().onAuthStateChanged((user) => {
             if (user) {
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('mainContent').style.display = 'block';
-                console.log("User logged in:", user.email);
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainContent').classList.remove('hidden');
+                console.log("Sistem Aktif:", user.email);
             } else {
-                document.getElementById('loginScreen').style.display = 'flex';
-                document.getElementById('mainContent').style.display = 'none';
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('mainContent').classList.add('hidden');
             }
         });
 
-        // 5. Perbaikan fungsi Login (Menggunakan wrapper getAuth)
-        async function checkAdminLogin() {
+        // 4. Fungsi Login
+        async function handleLogin() {
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
-            
             try {
-                // Memanggil getAuth() memastikan kita mengambil instance terbaru
                 await getAuth().signInWithEmailAndPassword(email, pass);
             } catch (e) {
-                alert("Login Gagal: " + e.message);
+                alert("Gagal: " + e.message);
             }
         }
 
-        function doLogout() {
+        // 5. Fungsi Logout
+        function handleLogout() {
             getAuth().signOut();
+        }
+
+        // 6. Fungsi Tombol Database (Contoh cara pakai)
+        async function fetchData() {
+            try {
+                const snapshot = await getDb().ref('data').once('value');
+                console.log(snapshot.val());
+            } catch (e) {
+                console.error("Database belum siap");
+            }
         }
     </script>
 </body>
