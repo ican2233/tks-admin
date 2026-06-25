@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
-<head>
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TKS TEAM Smart Admin</title>
@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <style>
+<style>
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
         .glass-card { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
@@ -22,133 +22,144 @@
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
         .hidden { display: none !important; }
-    </style>
-</head>
-<body class="bg-[#0b0f1a] min-h-screen pb-20 font-sans text-slate-200">
+</style>
+  </head>
+  <body class="bg-[#0b0f1a] min-h-screen pb-20 font-sans text-slate-200">
 
     <div id="toast-container"></div>
 
     <div id="confirmModal" class="hidden fixed inset-0 z-[110] bg-black/80 backdrop-blur-md flex items-center justify-center px-6">
-        <div class="glass-card p-8 rounded-[2.5rem] w-full max-w-xs border-t-4 border-red-500 shadow-2xl text-center">
-            <div class="w-16 h-16 bg-red-500/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <i class="fa-solid fa-trash-can text-2xl"></i>
-            </div>
-            <h3 class="text-white font-black uppercase italic mb-2">Hapus Data?</h3>
-            <p class="text-slate-400 text-[10px] mb-8 leading-tight">Data akan dihapus permanen dari sistem.</p>
-            <div class="flex gap-3">
-                <button onclick="closeConfirm()" class="flex-1 bg-slate-800 p-4 rounded-2xl font-black text-[10px] uppercase">Batal</button>
-                <button id="finalDeleteBtn" class="flex-1 bg-red-600 p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg shadow-red-500/20">Hapus</button>
-            </div>
-        </div>
+	  <div class="glass-card p-8 rounded-[2.5rem] w-full max-w-xs border-t-4 border-red-500 shadow-2xl text-center">
+		<div class="w-16 h-16 bg-red-500/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+		  <i class="fa-solid fa-trash-can text-2xl"></i>
+		</div>
+		<h3 class="text-white font-black uppercase italic mb-2">Hapus Data?</h3>
+		<p class="text-slate-400 text-[10px] mb-8 leading-tight">Data akan dihapus permanen dari sistem.</p>
+		<div class="flex gap-3">
+		  <button onclick="closeConfirm()" class="flex-1 bg-slate-800 p-4 rounded-2xl font-black text-[10px] uppercase">Batal</button>
+		  <button id="finalDeleteBtn" class="flex-1 bg-red-600 p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg shadow-red-500/20">Hapus</button>
+		</div>
+	  </div>
     </div>
 
     <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#0b0f1a] flex items-center justify-center px-4">
-        <div class="glass-card p-8 rounded-[2.5rem] w-full max-w-sm border-t-4 border-blue-500 shadow-2xl">
-            <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
-                    <i class="fa-solid fa-user-shield text-2xl text-white"></i>
-                </div>
-                <h2 class="text-xl font-black italic uppercase tracking-tighter">Admin Access</h2>
-            </div>
-            <div class="space-y-4">
-                <input type="email" id="loginEmail" placeholder="Email Admin" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none focus:border-blue-500">
-                <input type="password" id="loginPass" placeholder="Password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none focus:border-blue-500">
-                <button onclick="checkAdminLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-xs uppercase transition shadow-lg">Login System</button>
-            </div>
-        </div>
+	  <div class="glass-card p-8 rounded-[2.5rem] w-full max-w-sm border-t-4 border-blue-500 shadow-2xl">
+		<div class="text-center mb-8">
+		  <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
+			<i class="fa-solid fa-user-shield text-2xl text-white"></i>
+		  </div>
+		  <h2 class="text-xl font-black italic uppercase tracking-tighter">Admin Access</h2>
+		</div>
+		<div class="space-y-4">
+		  <input type="email" id="loginEmail" placeholder="Email Admin" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none focus:border-blue-500">
+		  <input type="password" id="loginPass" placeholder="Password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none focus:border-blue-500">
+		  <button onclick="checkAdminLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-xs uppercase transition shadow-lg">Login System</button>
+		</div>
+	  </div>
     </div>
 
     <div id="mainContent" class="hidden">
-        <div class="bg-gradient-to-r from-blue-700 to-indigo-900 p-8 shadow-2xl mb-6 rounded-b-[3rem] border-b border-white/10 text-center relative">
-            <button onclick="doLogout()" class="absolute right-6 top-6 text-white/50 hover:text-white transition">
-                <i class="fa-solid fa-power-off"></i>
-            </button>
-            <h1 class="text-2xl font-black tracking-tighter italic text-white uppercase">TKS TEAM Admin</h1>
-        </div>
+	  <div class="bg-gradient-to-r from-blue-700 to-indigo-900 p-8 shadow-2xl mb-6 rounded-b-[3rem] border-b border-white/10 text-center relative">
+		<button onclick="doLogout()" class="absolute right-6 top-6 text-white/50 hover:text-white transition">
+		  <i class="fa-solid fa-power-off"></i>
+		</button>
+		<h1 class="text-2xl font-black tracking-tighter italic text-white uppercase">TKS TEAM Admin</h1>
+	  </div>
 
-        <div class="max-w-md mx-auto px-4">
-            
-            <div id="adminTabNav" class="hidden flex gap-2 mb-6">
-                <button onclick="switchTab('users')" id="tab-users" class="flex-1 p-3 rounded-2xl bg-blue-600 text-[10px] font-black uppercase italic shadow-lg">User Management</button>
-                <button onclick="switchTab('admins')" id="tab-admins" class="flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic">Admin Settings</button>
-            </div>
+	  <div class="max-w-md mx-auto px-4">
 
-            <div id="usersTab">
-                <div class="glass-card p-6 rounded-3xl mb-4 shadow-xl">
-                    <div class="flex justify-between items-end mb-4">
-                        <div class="w-2/3">
-                            <label class="text-[9px] text-blue-400 font-black uppercase tracking-widest ml-2 mb-2 block">Mode Database</label>
-                            <select id="lockSelector" onchange="switchDatabase()" class="w-full bg-slate-800 p-3 rounded-xl font-bold text-xs border border-slate-600 text-white outline-none">
-                                <option value="lock1">Lock Password</option>
-                                <option value="lock2" selected>Lock Pass & Username</option>
-                                <option value="autologin">Lock Auto Login</option>
-                            </select>
-                        </div>
-                        <div class="text-right">
-                            <p id="totalUserCounter" class="text-3xl font-black text-white italic leading-none">0</p>
-                        </div>
-                    </div>
-                    <div class="relative mt-2">
-                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                        <input type="text" id="searchInput" onkeyup="filterUserList()" placeholder="Search" class="w-full p-3 pl-10 bg-black/30 border border-slate-700 rounded-xl text-xs outline-none focus:border-blue-500 transition">
-                    </div>
-                </div>
+		<div id="adminTabNav" class="hidden flex gap-2 mb-6">
+		  <button onclick="switchTab('users')" id="tab-users" class="flex-1 p-3 rounded-2xl bg-blue-600 text-[10px] font-black uppercase italic shadow-lg">User Management</button>
+		  <button onclick="switchTab('admins')" id="tab-admins" class="flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic">Admin Settings</button>
+		</div>
 
-                <div id="configArea" class="hidden glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-blue-500">
-                    <h2 class="text-blue-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
-                        <i class="fa-solid fa-gear mr-2"></i> Config Global
-                    </h2>
-                    <div class="space-y-4">
-                        <input type="text" id="cfg_adminUrl" placeholder="Admin Telegram URL..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
-                        <textarea id="cfg_marquee" placeholder="Marquee / Running Text..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none h-16"></textarea>
-                        <button onclick="saveGlobalConfig()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition">Simpan Config Global</button>
-                    </div>
-                </div>
+		<div id="usersTab">
+		  <div class="glass-card p-6 rounded-3xl mb-4 shadow-xl">
+			<div class="flex justify-between items-end mb-4">
+			  <div class="w-2/3">
+				<label class="text-[9px] text-blue-400 font-black uppercase tracking-widest ml-2 mb-2 block">Mode Database</label>
+				<select id="lockSelector" onchange="switchDatabase()" class="w-full bg-slate-800 p-3 rounded-xl font-bold text-xs border border-slate-600 text-white outline-none">
+				  <option value="lock1">Lock Password</option>
+				  <option value="lock2" selected>Lock Pass & Username</option>
+				  <option value="autologin">Lock Auto Login</option>
+				</select>
+			  </div>
+			  <div class="text-right">
+				<p id="totalUserCounter" class="text-3xl font-black text-white italic leading-none">0</p>
+			  </div>
+			</div>
 
-                <div id="userEditorArea" class="glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-emerald-500">
-                    <h2 id="formTitle" class="text-emerald-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
-                        <i class="fa-solid fa-user-plus mr-2"></i> Tambah User
-                    </h2>
-                    <div class="space-y-4">
-                        <input type="text" id="field_id" placeholder="ID Device" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
-                        <div id="usernameContainer"><input type="text" id="field_username" placeholder="Username" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none"></div>
-                        <div id="passwordContainer"><input type="text" id="field_password" placeholder="Key / Password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none"></div>
-                        <input type="date" id="field_expiry" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
-                        <div id="offlineContainer" class="bg-black/40 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
-                            <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Allow Offline</span>
-                            <select id="field_offline" class="bg-blue-600 text-white font-bold text-[10px] px-3 py-1 rounded-lg outline-none cursor-pointer">
-                                <option value="true">TRUE</option>
-                                <option value="false">FALSE</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="flex gap-2 mt-8">
-                        <button id="cancelBtn" onclick="clearForm()" class="hidden flex-1 bg-slate-700 p-5 rounded-2xl font-black text-xs uppercase transition">Batal</button>
-                        <button id="submitBtn" onclick="saveUser()" class="flex-[2] bg-emerald-600 p-5 rounded-2xl font-black text-xs uppercase transition">Simpan User</button>
-                    </div>
-                </div>
+			<div class="flex gap-2 mb-4">
+			  <button onclick="backupData()" class="flex-1 bg-indigo-600/20 border border-indigo-500/50 text-indigo-400 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition">
+				<i class="fa-solid fa-cloud-arrow-down mr-1"></i> Backup
+			  </button>
+			  <button onclick="document.getElementById('restoreInput').click()" class="flex-1 bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 p-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition">
+				<i class="fa-solid fa-cloud-arrow-up mr-1"></i> Restore
+			  </button>
+			  <input type="file" id="restoreInput" class="hidden" accept=".json" onchange="restoreData(event)">
+			</div>
 
-                <div id="userList" class="space-y-4 mt-6"></div>
-            </div>
+			<div class="relative mt-2">
+			  <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+			  <input type="text" id="searchInput" onkeyup="filterUserList()" placeholder="Search" class="w-full p-3 pl-10 bg-black/30 border border-slate-700 rounded-xl text-xs outline-none focus:border-blue-500 transition">
+			</div>
+		  </div>
 
-            <div id="adminsTab" class="hidden">
-                <div class="glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-amber-500">
-                    <h2 class="text-amber-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
-                        <i class="fa-solid fa-crown mr-2"></i> Owner Control
-                    </h2>
-                    <div class="space-y-4">
-                        <input type="email" id="newAdminEmail" placeholder="Email Admin..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
-                        <input type="text" id="newAdminPass" placeholder="Password Admin..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
-                        <button onclick="saveAdmin()" class="w-full bg-amber-600 hover:bg-amber-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition">Update/Tambah Admin</button>
-                    </div>
-                </div>
-                <div id="adminList" class="space-y-4"></div>
-            </div>
+		  <div id="configArea" class="hidden glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-blue-500">
+			<h2 class="text-blue-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
+			  <i class="fa-solid fa-gear mr-2"></i> Config Global
+			</h2>
+			<div class="space-y-4">
+			  <input type="text" id="cfg_adminUrl" placeholder="Admin Telegram URL..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
+			  <textarea id="cfg_marquee" placeholder="Marquee / Running Text..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none h-16"></textarea>
+			  <button onclick="saveGlobalConfig()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition">Simpan Config Global</button>
+			</div>
+		  </div>
 
-        </div>
+		  <div id="userEditorArea" class="glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-emerald-500">
+			<h2 id="formTitle" class="text-emerald-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
+			  <i class="fa-solid fa-user-plus mr-2"></i> Tambah User
+			</h2>
+			<div class="space-y-4">
+			  <input type="text" id="field_id" placeholder="ID Device" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
+			  <div id="usernameContainer"><input type="text" id="field_username" placeholder="Username" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none"></div>
+			  <div id="passwordContainer"><input type="text" id="field_password" placeholder="Key / Password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none"></div>
+			  <input type="date" id="field_expiry" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
+			  <div id="offlineContainer" class="bg-black/40 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+				<span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Allow Offline</span>
+				<select id="field_offline" class="bg-blue-600 text-white font-bold text-[10px] px-3 py-1 rounded-lg outline-none cursor-pointer">
+				  <option value="true">TRUE</option>
+				  <option value="false">FALSE</option>
+				</select>
+			  </div>
+			</div>
+			<div class="flex gap-2 mt-8">
+			  <button id="cancelBtn" onclick="clearForm()" class="hidden flex-1 bg-slate-700 p-5 rounded-2xl font-black text-xs uppercase transition">Batal</button>
+			  <button id="submitBtn" onclick="saveUser()" class="flex-[2] bg-emerald-600 p-5 rounded-2xl font-black text-xs uppercase transition">Simpan User</button>
+			</div>
+		  </div>
+
+		  <div id="userList" class="space-y-4 mt-6"></div>
+		</div>
+
+		<div id="adminsTab" class="hidden">
+		  <div class="glass-card p-6 rounded-[2.5rem] shadow-2xl mb-8 border-l-8 border-amber-500">
+			<h2 class="text-amber-400 font-black text-xs mb-6 uppercase tracking-widest flex items-center">
+			  <i class="fa-solid fa-crown mr-2"></i> Owner Control
+			</h2>
+			<div class="space-y-4">
+			  <input type="email" id="newAdminEmail" placeholder="Email Admin..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
+			  <input type="text" id="newAdminPass" placeholder="Password Admin..." class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none">
+			  <button onclick="saveAdmin()" class="w-full bg-amber-600 hover:bg-amber-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase shadow-lg transition">Update/Tambah Admin</button>
+			</div>
+		  </div>
+		  <div id="adminList" class="space-y-4"></div>
+		</div>
+
+	  </div>
     </div>
 
-    <script>
+<script>
         const SUPER_ADMIN_EMAIL = "suwandiikhsan1@gmail.com"; 
         const firebaseConfig = { databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com" };
         firebase.initializeApp(firebaseConfig);
@@ -220,7 +231,6 @@
             db.ref(currentPath).on('value', (snapshot) => {
                 rawData = snapshot.val();
                 
-                // ISI OTOMATIS GLOBAL CONFIG JIKA MODE AUTOLOGIN
                 if (currentPath === "autologin" && rawData) {
                     document.getElementById('cfg_adminUrl').value = rawData.AdminUrl || "";
                     document.getElementById('cfg_marquee').value = rawData.Marquee || "";
@@ -252,7 +262,6 @@
                 const isAuto = currentPath === "autologin";
                 const displayTitle = (!isAuto && u.username) ? u.username : (u.id || u.ID);
                 
-                // Logic Allow Offline (Membaca u.allowOffline)
                 const isOffline = (u.allowOffline === true || u.allowOffline === "true");
                 const offlineBadge = isOffline ? 
                     '<span class="text-emerald-400 font-bold">YES</span>' : 
@@ -315,6 +324,50 @@
                 await db.ref(currentPath).set(data);
                 showToast("Config Global Diupdate");
             } catch (e) { showToast("Gagal Update", "error"); }
+        }
+
+        // FUNGSI BACKUP DATA KE JSON
+        async function backupData() {
+    try {
+        const snapshot = await db.ref(currentPath).once('value');
+        const data = snapshot.val();
+        if (!data) return showToast("Tidak ada data", "error");
+        
+        const dataStr = JSON.stringify(data, null, 2);
+        
+        // Gunakan interface khusus untuk Android jika tersedia
+        if (window.AndroidInterface) {
+            window.AndroidInterface.downloadBackup(dataStr, `backup_${currentPath}.json`);
+        } else {
+            // Fallback untuk browser biasa
+            const blob = new Blob([dataStr], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_${currentPath}.json`;
+            a.click();
+        }
+        showToast("Proses Backup...");
+    } catch (e) { showToast("Gagal", "error"); }
+}
+
+
+        // FUNGSI RESTORE DATA DARI JSON
+        function restoreData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (confirm("Ganti data Firebase dengan data dari file ini?")) {
+                        await db.ref(currentPath).set(importedData);
+                        showToast("Restore Berhasil!");
+                    }
+                } catch (err) { showToast("File JSON tidak valid!", "error"); }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
         }
 
         function editUser(index) {
@@ -407,6 +460,7 @@
         }
         function formatDateToDMY(d) { if(!d.includes('-')) return d; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
         function formatDateToYMD(d) { if(!d.includes('/')) return d; const [day,m,y]=d.split('/'); return `${y}-${m}-${day}`; }
-    </script>
-</body>
+</script>
+  </body>
 </html>
+
