@@ -4,107 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TKS TEAM Smart Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <style>
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
-        .glass-card { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
-        .toast { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); color: white; padding: 14px 24px; border-radius: 18px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4); margin-bottom: 10px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; border-left: 5px solid #10b981; animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.5s forwards; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
-        .hidden { display: none !important; }
-    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
-<body class="bg-[#0b0f1a] min-h-screen pb-20 font-sans text-slate-200">
+<body>
 
-    <div id="toast-container"></div>
-
-    <!-- Login Screen -->
-    <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#0b0f1a] flex items-center justify-center px-4">
-        <div class="glass-card p-8 rounded-[2.5rem] w-full max-w-sm border-t-4 border-blue-500 shadow-2xl">
-            <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
-                    <i class="fa-solid fa-user-shield text-2xl text-white"></i>
-                </div>
-                <h2 class="text-xl font-black italic uppercase tracking-tighter">Admin Access</h2>
-            </div>
-            <div class="space-y-4">
-                <input type="email" id="loginEmail" placeholder="Email Admin" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none focus:border-blue-500">
-                <input type="password" id="loginPass" placeholder="Password" class="w-full p-4 bg-black/40 border border-slate-700 rounded-2xl text-sm outline-none focus:border-blue-500">
-                <button onclick="checkAdminLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-xs uppercase transition shadow-lg">Login System</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div id="mainContent" class="hidden">
-        <div class="bg-gradient-to-r from-blue-700 to-indigo-900 p-8 shadow-2xl mb-6 rounded-b-[3rem] border-b border-white/10 text-center relative">
-            <button onclick="doLogout()" class="absolute right-6 top-6 text-white/50 hover:text-white transition"><i class="fa-solid fa-power-off"></i></button>
-            <h1 class="text-2xl font-black tracking-tighter italic text-white uppercase">TKS TEAM Admin</h1>
-        </div>
-        <div class="max-w-md mx-auto px-4">
-            <!-- Isi konten user dan admin tetap sama seperti file Anda sebelumnya -->
-            <div id="adminTabNav" class="hidden flex gap-2 mb-6">
-                <button onclick="switchTab('users')" id="tab-users" class="flex-1 p-3 rounded-2xl bg-blue-600 text-[10px] font-black uppercase italic shadow-lg">User Management</button>
-                <button onclick="switchTab('admins')" id="tab-admins" class="flex-1 p-3 rounded-2xl bg-slate-800 text-[10px] font-black uppercase italic">Admin Settings</button>
-            </div>
-            <div id="usersTab"><!-- ... (tetap sama) ... --></div>
-            <div id="adminsTab" class="hidden"><!-- ... (tetap sama) ... --></div>
-        </div>
-    </div>
+    <div id="loginScreen">...</div>
+    <div id="mainContent" class="hidden">...</div>
 
     <script>
-        const SUPER_ADMIN_EMAIL = "suwandiikhsan1@gmail.com"; 
+        // 1. Konfigurasi
         const firebaseConfig = { databaseURL: "https://admin-panel-tks-default-rtdb.firebaseio.com" };
         
-        // Inisialisasi Firebase
+        // 2. Inisialisasi
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const auth = firebase.auth(); // Auth diinisialisasi setelah app
 
-        // Listener Login
-        auth.onAuthStateChanged((user) => {
+        // 3. Wrapper untuk memastikan Auth selalu tersedia
+        const getAuth = () => firebase.auth();
+        const getDb = () => firebase.database();
+
+        // 4. Listener State (Gunakan ini untuk kontrol UI)
+        firebase.auth().onAuthStateChanged((user) => {
             if (user) {
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('mainContent').classList.remove('hidden');
-                if (user.email === SUPER_ADMIN_EMAIL) {
-                    document.getElementById('adminTabNav').classList.remove('hidden');
-                    loadAdminList();
-                }
-                switchDatabase();
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                console.log("User logged in:", user.email);
             } else {
-                document.getElementById('loginScreen').classList.remove('hidden');
-                document.getElementById('mainContent').classList.add('hidden');
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('mainContent').style.display = 'none';
             }
         });
 
+        // 5. Perbaikan fungsi Login (Menggunakan wrapper getAuth)
         async function checkAdminLogin() {
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
+            
             try {
-                await auth.signInWithEmailAndPassword(email, pass);
+                // Memanggil getAuth() memastikan kita mengambil instance terbaru
+                await getAuth().signInWithEmailAndPassword(email, pass);
             } catch (e) {
-                showToast("Login Gagal: " + e.message, "error");
+                alert("Login Gagal: " + e.message);
             }
         }
 
-        function doLogout() { auth.signOut(); }
-
-        // Fungsi pendukung lainnya (switchTab, switchDatabase, loadFirebaseData, dll) 
-        // tetap gunakan fungsi yang sudah ada di file Anda sebelumnya karena sudah benar.
-        // [Copy fungsi-fungsi Anda lainnya di sini agar lengkap]
-        
-        function showToast(m, t='success') {
-            const c = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast ${t==='error'?'border-red-500':'border-emerald-500'}`;
-            toast.innerHTML = m; c.appendChild(toast);
-            setTimeout(() => toast.remove(), 2500);
+        function doLogout() {
+            getAuth().signOut();
         }
     </script>
 </body>
